@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=xorriso-ui
+Comment=Modern disc burning GUI
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/xorriso-ui %u
+Terminal=false
+Type=Application
+Icon=xorriso-ui
+Categories=Utility;
+StartupWMClass=xorriso-ui
+
+ 
