@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import FileTree from './FileTree.vue'
 import Button from '../ui/Button.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   entries: {
@@ -67,23 +70,23 @@ function onSelect(entry) {
 
 <template>
   <div
-    class="flex flex-col h-full bg-gray-900 rounded-lg border border-gray-700"
+    class="flex flex-col h-full bg-white dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-700"
     :class="{ 'border-blue-500 border-2': dragOver }"
     @dragover="onDragOver"
     @dragleave="onDragLeave"
     @drop="onDrop"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-3 py-2 border-b border-gray-700 bg-gray-800 rounded-t-lg">
+    <div class="flex items-center justify-between px-3 py-2 border-b border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 rounded-t-lg">
       <div class="flex items-center gap-2">
         <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" stroke-width="1.5" />
           <circle cx="12" cy="12" r="3" stroke-width="1.5" />
         </svg>
-        <span class="text-sm font-medium text-gray-200">Disc Layout</span>
+        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ t('project.discLayout') }}</span>
       </div>
-      <span class="text-xs text-gray-400">
-        {{ entries.length }} items, {{ formatSize(totalSize) }}
+      <span class="text-xs text-gray-600 dark:text-gray-400">
+        {{ entries.length }} {{ t('project.items') }}, {{ formatSize(totalSize) }}
       </span>
     </div>
 
@@ -99,8 +102,8 @@ function onSelect(entry) {
           <circle cx="12" cy="12" r="3" stroke-width="1" />
           <circle cx="12" cy="12" r="6" stroke-width="0.5" />
         </svg>
-        <p class="text-sm mb-1">No files added to project</p>
-        <p class="text-xs text-gray-600">Drag files here or use the browser to add files</p>
+        <p class="text-sm mb-1">{{ t('project.noFilesAdded') }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-600">{{ t('project.dragFilesHere') }}</p>
       </div>
 
       <!-- File tree with remove buttons -->
@@ -108,7 +111,7 @@ function onSelect(entry) {
         <div
           v-for="entry in entries"
           :key="entry.path"
-          class="group flex items-center gap-1 px-2 py-1 hover:bg-gray-800 transition-colors"
+          class="group flex items-center gap-1 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
           <!-- Icon -->
           <svg
@@ -121,7 +124,7 @@ function onSelect(entry) {
           </svg>
           <svg
             v-else
-            class="w-4 h-4 text-gray-400 flex-shrink-0"
+            class="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -131,7 +134,7 @@ function onSelect(entry) {
           </svg>
 
           <!-- Name -->
-          <span class="text-sm text-gray-200 truncate flex-1">{{ entry.name }}</span>
+          <span class="text-sm text-gray-800 dark:text-gray-200 truncate flex-1">{{ entry.name }}</span>
 
           <!-- Size -->
           <span class="text-xs text-gray-500 flex-shrink-0">
@@ -141,7 +144,7 @@ function onSelect(entry) {
           <!-- Remove button -->
           <button
             class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all flex-shrink-0 ml-1"
-            title="Remove from project"
+            :title="t('project.remove')"
             @click="removeEntry(entry)"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

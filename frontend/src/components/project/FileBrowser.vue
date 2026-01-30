@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from '../ui/Button.vue'
+
+const { t } = useI18n()
 
 const emit = defineEmits(['add-files'])
 
@@ -85,9 +88,9 @@ function formatSize(bytes) {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-gray-900 rounded-lg border border-gray-700">
+  <div class="flex flex-col h-full bg-white dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-700">
     <!-- Header -->
-    <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-700 bg-gray-800 rounded-t-lg">
+    <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 rounded-t-lg">
       <Button variant="ghost" size="sm" @click="goUp">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
@@ -95,20 +98,20 @@ function formatSize(bytes) {
       </Button>
 
       <!-- Breadcrumb -->
-      <div class="flex items-center gap-1 text-sm text-gray-400 overflow-hidden flex-1">
+      <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 overflow-hidden flex-1">
         <span
-          class="cursor-pointer hover:text-gray-200 transition-colors flex-shrink-0"
+          class="cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors flex-shrink-0"
           @click="navigateTo('/')"
         >/</span>
         <template v-for="(crumb, idx) in breadcrumbs" :key="crumb.path">
           <span
-            class="cursor-pointer hover:text-gray-200 transition-colors truncate"
-            :class="{ 'text-gray-200': idx === breadcrumbs.length - 1 }"
+            class="cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors truncate"
+            :class="{ 'text-gray-800 dark:text-gray-200': idx === breadcrumbs.length - 1 }"
             @click="navigateTo(crumb.path)"
           >
             {{ crumb.name }}
           </span>
-          <span v-if="idx < breadcrumbs.length - 1" class="text-gray-600 flex-shrink-0">/</span>
+          <span v-if="idx < breadcrumbs.length - 1" class="text-gray-500 dark:text-gray-600 flex-shrink-0">/</span>
         </template>
       </div>
 
@@ -121,7 +124,7 @@ function formatSize(bytes) {
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        Add
+        {{ t('common.add') }}
       </Button>
     </div>
 
@@ -130,7 +133,7 @@ function formatSize(bytes) {
       <div
         v-for="entry in entries"
         :key="entry.path"
-        class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-800 transition-colors"
+        class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         :class="{
           'bg-blue-900/30': selectedEntries.has(entry.path),
         }"
@@ -148,7 +151,7 @@ function formatSize(bytes) {
         </svg>
         <svg
           v-else
-          class="w-5 h-5 text-gray-400 flex-shrink-0"
+          class="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -158,7 +161,7 @@ function formatSize(bytes) {
         </svg>
 
         <!-- Name -->
-        <span class="text-sm text-gray-200 truncate flex-1">
+        <span class="text-sm text-gray-800 dark:text-gray-200 truncate flex-1">
           {{ entry.name }}
         </span>
 
@@ -169,7 +172,7 @@ function formatSize(bytes) {
       </div>
 
       <div v-if="entries.length === 0" class="text-center text-gray-500 text-sm py-8">
-        Empty directory
+        {{ t('project.emptyDirectory') }}
       </div>
     </div>
   </div>

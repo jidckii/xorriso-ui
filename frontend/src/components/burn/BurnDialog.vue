@@ -1,10 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Modal from '../ui/Modal.vue'
 import Button from '../ui/Button.vue'
 import BurnOptions from './BurnOptions.vue'
 import BurnProgress from './BurnProgress.vue'
 import BurnLog from './BurnLog.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   show: Boolean,
@@ -34,10 +37,10 @@ const logLines = ref([])
 
 const modalTitle = computed(() => {
   const map = {
-    configure: 'Burn Disc',
-    burning: 'Burning...',
-    done: 'Burn Complete',
-    error: 'Burn Failed',
+    configure: t('burn.title'),
+    burning: t('burnProgress.writing') + '...',
+    done: t('burn.burnComplete'),
+    error: t('burn.burnFailed'),
   }
   return map[state.value]
 })
@@ -126,8 +129,8 @@ function handleClose() {
       <svg class="w-16 h-16 mx-auto text-green-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <h3 class="text-lg font-semibold text-gray-100 mb-1">Burn Complete!</h3>
-      <p class="text-sm text-gray-400">The disc was burned and verified successfully.</p>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{{ t('burn.burnComplete') }}</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('burn.burnCompleteMessage') }}</p>
     </div>
 
     <!-- Error state -->
@@ -135,14 +138,14 @@ function handleClose() {
       <svg class="w-16 h-16 mx-auto text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <h3 class="text-lg font-semibold text-gray-100 mb-1">Burn Failed</h3>
-      <p class="text-sm text-gray-400">An error occurred during the burn process. Check the log for details.</p>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{{ t('burn.burnFailed') }}</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('burn.burnFailedMessage') }}</p>
     </div>
 
     <!-- Log toggle (visible in burning/done/error states) -->
     <div v-if="state !== 'configure'" class="mt-4">
       <button
-        class="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
+        class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors flex items-center gap-1"
         @click="showLog = !showLog"
       >
         <svg
@@ -153,7 +156,7 @@ function handleClose() {
         >
           <path d="M6 6l8 4-8 4V6z" />
         </svg>
-        {{ showLog ? 'Hide' : 'Show' }} log output
+        {{ showLog ? t('burnProgress.hideLog') : t('burnProgress.showLog') }}
       </button>
       <div v-if="showLog" class="mt-2">
         <BurnLog :lines="logLines" />
@@ -167,7 +170,7 @@ function handleClose() {
         variant="secondary"
         @click="handleClose"
       >
-        Cancel
+        {{ t('burn.cancel') }}
       </Button>
       <Button
         v-if="state === 'configure'"
@@ -178,21 +181,21 @@ function handleClose() {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
         </svg>
-        Start Burn
+        {{ t('burn.startBurn') }}
       </Button>
       <Button
         v-if="state === 'burning'"
         variant="danger"
         disabled
       >
-        Cancel (not implemented)
+        {{ t('burn.cancelBurn') }}
       </Button>
       <Button
         v-if="state === 'done' || state === 'error'"
         variant="secondary"
         @click="handleClose"
       >
-        Close
+        {{ t('burn.close') }}
       </Button>
     </template>
   </Modal>

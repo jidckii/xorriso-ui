@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useDeviceStore } from '../stores/deviceStore'
 import { useProjectStore } from '../stores/projectStore'
 
+const { t } = useI18n()
 const router = useRouter()
 const deviceStore = useDeviceStore()
 const projectStore = useProjectStore()
@@ -98,29 +100,29 @@ function goToBurn() {
       <div class="flex-1 flex min-h-0">
 
         <!-- Left Panel: File Browser -->
-        <div class="w-1/2 flex flex-col border-r border-gray-700">
-          <div class="flex items-center gap-2 px-3 py-2 bg-gray-800 border-b border-gray-700">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-1/2 flex flex-col border-r border-gray-300 dark:border-gray-700">
+          <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
+            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
-            <span class="text-sm font-medium text-gray-300">File Browser</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('project.fileBrowser') }}</span>
             <span class="ml-auto text-xs text-gray-500 truncate max-w-48">{{ browsePath }}</span>
           </div>
 
           <div class="flex-1 overflow-y-auto">
             <table class="w-full text-sm">
-              <thead class="sticky top-0 bg-gray-800 text-gray-400 text-xs uppercase">
+              <thead class="sticky top-0 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs uppercase">
                 <tr>
-                  <th class="px-3 py-1.5 text-left">Name</th>
-                  <th class="px-3 py-1.5 text-right w-24">Size</th>
+                  <th class="px-3 py-1.5 text-left">{{ t('common.name') }}</th>
+                  <th class="px-3 py-1.5 text-right w-24">{{ t('common.size') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr
                   v-for="entry in browseEntries"
                   :key="entry.path"
-                  class="border-b border-gray-800 hover:bg-gray-800/50 cursor-pointer"
+                  class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 cursor-pointer"
                   :class="{ 'bg-blue-900/30': selectedBrowseFiles.includes(entry.path) }"
                   @click="toggleBrowseSelection(entry)"
                   @dblclick="navigateTo(entry)"
@@ -143,56 +145,56 @@ function goToBurn() {
           </div>
 
           <!-- File Browser Toolbar -->
-          <div class="flex items-center gap-2 px-3 py-2 bg-gray-800 border-t border-gray-700">
+          <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
             <button
               @click="addSelectedToProject"
               :disabled="selectedBrowseFiles.length === 0"
               class="px-3 py-1 text-xs font-medium rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Add to project
+              {{ t('project.addToProject') }}
             </button>
             <span class="text-xs text-gray-500">
-              {{ selectedBrowseFiles.length }} selected
+              {{ selectedBrowseFiles.length }} {{ t('project.selected') }}
             </span>
           </div>
         </div>
 
         <!-- Right Panel: Disc Layout -->
         <div class="w-1/2 flex flex-col">
-          <div class="flex items-center gap-2 px-3 py-2 bg-gray-800 border-b border-gray-700">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
+            <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v2m0 8v2m9-6a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span class="text-sm font-medium text-gray-300">Disc Layout</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('project.discLayout') }}</span>
             <span class="ml-auto text-xs text-gray-500">
-              {{ projectStore.entryCount }} items - {{ projectStore.totalSizeFormatted }}
+              {{ projectStore.entryCount }} {{ t('project.items') }} - {{ projectStore.totalSizeFormatted }}
             </span>
           </div>
 
           <div class="flex-1 overflow-y-auto">
-            <div v-if="projectStore.project.entries.length === 0" class="flex items-center justify-center h-full text-gray-600">
+            <div v-if="projectStore.project.entries.length === 0" class="flex items-center justify-center h-full text-gray-500 dark:text-gray-600">
               <div class="text-center">
-                <svg class="w-12 h-12 mx-auto mb-2 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-12 h-12 mx-auto mb-2 text-gray-200 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p class="text-sm">Add files from the file browser</p>
+                <p class="text-sm">{{ t('common.addFilesFromBrowser') }}</p>
               </div>
             </div>
 
             <table v-else class="w-full text-sm">
-              <thead class="sticky top-0 bg-gray-800 text-gray-400 text-xs uppercase">
+              <thead class="sticky top-0 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs uppercase">
                 <tr>
-                  <th class="px-3 py-1.5 text-left">Destination path</th>
-                  <th class="px-3 py-1.5 text-right w-24">Size</th>
+                  <th class="px-3 py-1.5 text-left">{{ t('common.destinationPath') }}</th>
+                  <th class="px-3 py-1.5 text-right w-24">{{ t('common.size') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr
                   v-for="entry in projectStore.project.entries"
                   :key="entry.destPath"
-                  class="border-b border-gray-800 hover:bg-gray-800/50 cursor-pointer"
+                  class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 cursor-pointer"
                   :class="{ 'bg-blue-900/30': selectedProjectEntries.includes(entry.destPath) }"
                   @click="toggleProjectSelection(entry)"
                 >
@@ -214,13 +216,13 @@ function goToBurn() {
           </div>
 
           <!-- Disc Layout Toolbar -->
-          <div class="flex items-center gap-2 px-3 py-2 bg-gray-800 border-t border-gray-700">
+          <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
             <button
               @click="removeSelectedFromProject"
               :disabled="selectedProjectEntries.length === 0"
               class="px-3 py-1 text-xs font-medium rounded bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Remove
+              {{ t('project.remove') }}
             </button>
             <span class="flex-1"></span>
             <button
@@ -228,24 +230,24 @@ function goToBurn() {
               :disabled="projectStore.project.entries.length === 0"
               class="px-4 py-1 text-xs font-medium rounded bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Burn
+              {{ t('burn.title') }}
             </button>
           </div>
         </div>
       </div>
 
       <!-- Bottom: Capacity Bar -->
-      <div class="px-3 py-2 bg-gray-800 border-t border-gray-700">
+      <div class="px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
         <div class="flex items-center gap-3">
-          <span class="text-xs text-gray-400 whitespace-nowrap">Capacity:</span>
-          <div class="flex-1 h-3 bg-gray-700 rounded-full overflow-hidden">
+          <span class="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ t('project.capacity') }}:</span>
+          <div class="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-300"
               :class="capacityColor"
               :style="{ width: Math.min(100, capacityPercent) + '%' }"
             ></div>
           </div>
-          <span class="text-xs text-gray-400 whitespace-nowrap">
+          <span class="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
             {{ formatBytes(projectStore.totalSize) }} / {{ formatBytes(deviceStore.mediaCapacityBytes) }}
             <span v-if="capacityPercent > 0" class="ml-1">({{ capacityPercent.toFixed(1) }}%)</span>
           </span>
@@ -253,15 +255,15 @@ function goToBurn() {
         <div class="flex items-center gap-4 mt-1">
           <div class="flex items-center gap-1">
             <span class="w-3 h-1.5 rounded-full bg-blue-600 inline-block"></span>
-            <span class="text-[10px] text-gray-500">CD 700MB</span>
+            <span class="text-[10px] text-gray-500">{{ t('capacityBar.cd700') }}</span>
           </div>
           <div class="flex items-center gap-1">
             <span class="w-3 h-1.5 rounded-full bg-purple-600 inline-block"></span>
-            <span class="text-[10px] text-gray-500">DVD 4.7GB</span>
+            <span class="text-[10px] text-gray-500">{{ t('capacityBar.dvd') }}</span>
           </div>
           <div class="flex items-center gap-1">
             <span class="w-3 h-1.5 rounded-full bg-cyan-600 inline-block"></span>
-            <span class="text-[10px] text-gray-500">BD-R 25GB</span>
+            <span class="text-[10px] text-gray-500">{{ t('capacityBar.bd') }}</span>
           </div>
         </div>
       </div>
@@ -269,16 +271,16 @@ function goToBurn() {
 
     <!-- Right Sidebar: Device Panel (collapsible) -->
     <div
-      class="border-l border-gray-700 bg-gray-850 transition-all duration-200"
+      class="border-l border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 transition-all duration-200"
       :class="devicePanelOpen ? 'w-64' : 'w-10'"
     >
       <!-- Toggle Button -->
       <button
         @click="devicePanelOpen = !devicePanelOpen"
-        class="w-full flex items-center justify-center py-2 hover:bg-gray-700 transition-colors border-b border-gray-700"
+        class="w-full flex items-center justify-center py-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors border-b border-gray-300 dark:border-gray-700"
       >
         <svg
-          class="w-4 h-4 text-gray-400 transition-transform"
+          class="w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform"
           :class="{ 'rotate-180': !devicePanelOpen }"
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
@@ -289,13 +291,13 @@ function goToBurn() {
       <div v-show="devicePanelOpen" class="p-3 space-y-4 overflow-y-auto h-full">
         <!-- Device Selector -->
         <div>
-          <label class="block text-xs font-medium text-gray-400 mb-1">Device</label>
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{{ t('device.device') }}</label>
           <select
             :value="deviceStore.currentDevicePath"
             @change="deviceStore.selectDevice(($event.target).value)"
-            class="w-full px-2 py-1.5 text-sm bg-gray-700 border border-gray-600 rounded text-gray-200 focus:outline-none focus:border-blue-500"
+            class="w-full px-2 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
           >
-            <option v-if="deviceStore.devices.length === 0" value="" disabled>No devices found</option>
+            <option v-if="deviceStore.devices.length === 0" value="" disabled>{{ t('device.noDevicesFound') }}</option>
             <option v-for="dev in deviceStore.devices" :key="dev.path" :value="dev.path">
               {{ dev.name }}
             </option>
@@ -304,49 +306,49 @@ function goToBurn() {
 
         <!-- Media Info -->
         <div v-if="deviceStore.mediaInfo">
-          <h3 class="text-xs font-medium text-gray-400 mb-2">Media Info</h3>
-          <div class="space-y-1 text-xs text-gray-300">
+          <h3 class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{{ t('device.mediaInfo') }}</h3>
+          <div class="space-y-1 text-xs text-gray-700 dark:text-gray-300">
             <div class="flex justify-between">
-              <span class="text-gray-500">Type:</span>
+              <span class="text-gray-500">{{ t('device.type') }}:</span>
               <span>{{ deviceStore.mediaInfo.mediaType }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">Status:</span>
+              <span class="text-gray-500">{{ t('device.status') }}:</span>
               <span>{{ deviceStore.mediaInfo.mediaStatus }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">Capacity:</span>
+              <span class="text-gray-500">{{ t('device.capacity') }}:</span>
               <span>{{ formatBytes(deviceStore.mediaInfo.capacityBytes) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">Free:</span>
+              <span class="text-gray-500">{{ t('device.free') }}:</span>
               <span>{{ formatBytes(deviceStore.mediaInfo.freeBytes) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">Sessions:</span>
+              <span class="text-gray-500">{{ t('device.sessions') }}:</span>
               <span>{{ deviceStore.mediaInfo.sessions }}</span>
             </div>
           </div>
         </div>
 
-        <div v-else class="text-xs text-gray-600 text-center py-4">
-          No media detected
+        <div v-else class="text-xs text-gray-500 dark:text-gray-600 text-center py-4">
+          {{ t('device.noMediaDetected') }}
         </div>
 
         <!-- Actions -->
         <div class="space-y-2">
           <button
             @click="deviceStore.fetchMediaInfo()"
-            class="w-full px-3 py-1.5 text-xs font-medium rounded bg-gray-700 hover:bg-gray-600 transition-colors"
+            class="w-full px-3 py-1.5 text-xs font-medium rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
-            Refresh media
+            {{ t('device.refreshMedia') }}
           </button>
           <button
             @click="deviceStore.ejectDisc()"
             :disabled="!deviceStore.currentDevicePath"
-            class="w-full px-3 py-1.5 text-xs font-medium rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-40 transition-colors"
+            class="w-full px-3 py-1.5 text-xs font-medium rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-40 transition-colors"
           >
-            Eject disc
+            {{ t('device.ejectDisc') }}
           </button>
         </div>
       </div>

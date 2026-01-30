@@ -41,7 +41,7 @@ const sizeClass = computed(() => {
 <template>
   <div class="w-full">
     <div
-      :class="['w-full bg-gray-700 rounded-full overflow-hidden', sizeClass]"
+      :class="['w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden', sizeClass]"
     >
       <div
         :class="[
@@ -53,7 +53,7 @@ const sizeClass = computed(() => {
     </div>
     <div
       v-if="showLabel"
-      class="mt-1 text-xs text-gray-400 text-right"
+      class="mt-1 text-xs text-gray-600 dark:text-gray-400 text-right"
     >
       {{ clampedValue.toFixed(0) }}%
     </div>

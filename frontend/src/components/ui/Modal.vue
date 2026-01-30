@@ -46,17 +46,17 @@ function onBackdropClick(e) {
       >
         <div
           :class="[
-            'w-full mx-4 bg-gray-800 rounded-lg shadow-xl border border-gray-700',
+            'w-full mx-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700',
             sizeClass,
           ]"
         >
           <!-- Header -->
           <div
-            class="flex items-center justify-between px-4 py-3 border-b border-gray-700"
+            class="flex items-center justify-between px-4 py-3 border-b border-gray-300 dark:border-gray-700"
           >
-            <h3 class="text-lg font-semibold text-gray-100">{{ title }}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ title }}</h3>
             <button
-              class="text-gray-400 hover:text-gray-200 transition-colors"
+              class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
               @click="emit('close')"
             >
               <svg
@@ -83,7 +83,7 @@ function onBackdropClick(e) {
           <!-- Footer -->
           <div
             v-if="$slots.footer"
-            class="px-4 py-3 border-t border-gray-700 flex justify-end gap-2"
+            class="px-4 py-3 border-t border-gray-300 dark:border-gray-700 flex justify-end gap-2"
           >
             <slot name="footer" />
           </div>

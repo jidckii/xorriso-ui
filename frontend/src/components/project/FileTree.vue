@@ -59,7 +59,7 @@ function formatSize(bytes) {
       :key="entry.path"
     >
       <div
-        class="flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer hover:bg-gray-700/50 transition-colors"
+        class="flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-colors"
         :class="{
           'bg-blue-900/30': selectable && selectedPath === entry.path,
         }"
@@ -90,7 +90,7 @@ function formatSize(bytes) {
         </svg>
         <svg
           v-else
-          class="w-4 h-4 text-gray-400 flex-shrink-0"
+          class="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -100,7 +100,7 @@ function formatSize(bytes) {
         </svg>
 
         <!-- Name -->
-        <span class="text-gray-200 truncate flex-1" @click.stop="selectEntry(entry)">
+        <span class="text-gray-800 dark:text-gray-200 truncate flex-1" @click.stop="selectEntry(entry)">
           {{ entry.name }}
         </span>
 

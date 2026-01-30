@@ -1,13 +1,20 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useThemeStore } from '../stores/themeStore'
 // TODO: import Wails service bindings when available
 // import { GetSettings, SaveSettings } from '../../bindings/xorriso-ui/SettingsService'
+
+const { t, locale } = useI18n()
+const themeStore = useThemeStore()
 
 // --- State ---
 const saving = ref(false)
 const saved = ref(false)
 
 const settings = reactive({
+  language: locale.value,
+  theme: themeStore.currentTheme,
   xorrisoBinaryPath: '/usr/bin/xorriso',
   devicePollInterval: 5,
   bdxlSafeMode: false,
@@ -35,6 +42,17 @@ watch(() => settings.bdxlSafeMode, (enabled) => {
     settings.defaultBurnOptions.verify = true
     settings.defaultBurnOptions.streamRecording = true
   }
+})
+
+// Apply language change immediately
+watch(() => settings.language, (newLang) => {
+  locale.value = newLang
+  localStorage.setItem('xorriso-language', newLang)
+})
+
+// Apply theme change immediately
+watch(() => settings.theme, (newTheme) => {
+  themeStore.setTheme(newTheme === 'dark')
 })
 
 // --- Actions ---
@@ -74,145 +92,170 @@ loadSettings()
     <div class="max-w-2xl mx-auto p-6 space-y-8">
 
       <div>
-        <h1 class="text-xl font-semibold">Settings</h1>
-        <p class="text-sm text-gray-500 mt-1">Configure xorriso-ui application preferences</p>
+        <h1 class="text-xl font-semibold">{{ t('settings.title') }}</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ t('settings.subtitle') }}</p>
       </div>
 
-      <!-- xorriso Binary Path -->
+      <!-- Appearance -->
       <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide">General</h2>
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.appearance') }}</h2>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.language') }}</label>
+            <select
+              v-model="settings.language"
+              class="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
+            >
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.theme') }}</label>
+            <select
+              v-model="settings.theme"
+              class="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
+            >
+              <option value="dark">{{ t('settings.dark') }}</option>
+              <option value="light">{{ t('settings.light') }}</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- General -->
+      <section class="space-y-3">
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.general') }}</h2>
 
         <div>
-          <label class="block text-sm text-gray-300 mb-1">xorriso binary path</label>
+          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.xorrisoBinaryPath') }}</label>
           <input
             v-model="settings.xorrisoBinaryPath"
             type="text"
             placeholder="/usr/bin/xorriso"
-            class="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500"
+            class="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-blue-500"
           />
-          <p class="text-xs text-gray-600 mt-1">Full path to the xorriso executable</p>
+          <p class="text-xs text-gray-500 dark:text-gray-600 mt-1">{{ t('settings.xorrisoBinaryPathHelp') }}</p>
         </div>
 
         <div>
-          <label class="block text-sm text-gray-300 mb-1">Device poll interval (seconds)</label>
+          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.devicePollInterval') }}</label>
           <input
             v-model.number="settings.devicePollInterval"
             type="number"
             min="1"
             max="60"
-            class="w-32 px-3 py-2 text-sm bg-gray-800 border border-gray-600 rounded text-gray-200 focus:outline-none focus:border-blue-500"
+            class="w-32 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
           />
-          <p class="text-xs text-gray-600 mt-1">How often to check for device and media changes</p>
+          <p class="text-xs text-gray-500 dark:text-gray-600 mt-1">{{ t('settings.devicePollIntervalHelp') }}</p>
         </div>
       </section>
 
       <!-- Default ISO Options -->
       <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Default ISO Options</h2>
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.defaultIsoOptions') }}</h2>
 
         <div class="space-y-2">
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultIsoOptions.rockRidge" class="accent-blue-500" />
-            Rock Ridge extensions (Linux/Unix file attributes)
+            {{ t('settings.rockRidge') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultIsoOptions.joliet" class="accent-blue-500" />
-            Joliet extensions (Windows long filenames)
+            {{ t('settings.joliet') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultIsoOptions.md5" class="accent-blue-500" />
-            Record MD5 checksums
+            {{ t('settings.md5') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultIsoOptions.backupMode" class="accent-blue-500" />
-            Backup mode (preserves ACL, xattr, hardlinks)
+            {{ t('settings.backupMode') }}
           </label>
         </div>
       </section>
 
       <!-- Default Burn Options -->
       <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Default Burn Options</h2>
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.defaultBurnOptions') }}</h2>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm text-gray-300 mb-1">Default speed</label>
+            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.defaultSpeed') }}</label>
             <select
               v-model="settings.defaultBurnOptions.speed"
-              class="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-600 rounded text-gray-200 focus:outline-none focus:border-blue-500"
+              class="w-full px-2 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
             >
-              <option value="auto">Auto</option>
-              <option value="1">1x</option>
-              <option value="2">2x</option>
-              <option value="4">4x</option>
-              <option value="8">8x</option>
-              <option value="12">12x</option>
-              <option value="16">16x</option>
+              <option value="auto">{{ t('settings.speedAuto') }}</option>
+              <option value="1">{{ t('settings.speed1x') }}</option>
+              <option value="2">{{ t('settings.speed2x') }}</option>
+              <option value="4">{{ t('settings.speed4x') }}</option>
+              <option value="8">{{ t('settings.speed8x') }}</option>
+              <option value="12">{{ t('settings.speed12x') }}</option>
+              <option value="16">{{ t('settings.speed16x') }}</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm text-gray-300 mb-1">Default burn mode</label>
+            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.defaultBurnMode') }}</label>
             <select
               v-model="settings.defaultBurnOptions.burnMode"
-              class="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-600 rounded text-gray-200 focus:outline-none focus:border-blue-500"
+              class="w-full px-2 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
             >
-              <option value="auto">Auto (DAO/SAO)</option>
-              <option value="tao">TAO</option>
-              <option value="sao">SAO/DAO</option>
+              <option value="auto">{{ t('burn.autoDao') }}</option>
+              <option value="tao">{{ t('burn.tao') }}</option>
+              <option value="sao">{{ t('burn.saoDao') }}</option>
             </select>
           </div>
         </div>
 
         <div class="space-y-2 mt-2">
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultBurnOptions.verify" class="accent-blue-500" />
-            Verify after burn
+            {{ t('burn.verifyAfterBurn') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultBurnOptions.eject" class="accent-blue-500" />
-            Eject disc when done
+            {{ t('burn.ejectWhenDone') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultBurnOptions.dummyMode" class="accent-yellow-500" />
-            Simulation (dummy) mode
+            {{ t('burn.simulationMode') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultBurnOptions.closeDisc" class="accent-blue-500" />
-            Close disc (no multisession)
+            {{ t('burn.closeDisc') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-300">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultBurnOptions.streamRecording" class="accent-blue-500" />
-            Stream recording (for Blu-ray)
+            {{ t('burn.streamRecording') }}
           </label>
         </div>
       </section>
 
       <!-- BDXL Safe Mode -->
       <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Blu-ray / BDXL</h2>
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.bluray') }}</h2>
 
-        <label class="flex items-start gap-3 text-sm text-gray-300">
+        <label class="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300">
           <input type="checkbox" v-model="settings.bdxlSafeMode" class="accent-cyan-500 mt-0.5" />
           <div>
-            <span class="font-medium">BDXL safe mode</span>
-            <p class="text-xs text-gray-500 mt-0.5">
-              Automatically enables MD5 checksums, verify after burn, and stream recording
-              for BD media. Recommended for large or archival burns.
-            </p>
+            <span class="font-medium">{{ t('settings.bdxlSafeMode') }}</span>
+            <p class="text-xs text-gray-500 mt-0.5">{{ t('settings.bdxlSafeModeDescription') }}</p>
           </div>
         </label>
       </section>
 
       <!-- Save -->
-      <div class="flex items-center gap-3 pt-4 border-t border-gray-700">
+      <div class="flex items-center gap-3 pt-4 border-t border-gray-300 dark:border-gray-700">
         <button
           @click="saveSettings"
           :disabled="saving"
-          class="px-6 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 transition-colors"
+          class="px-6 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 transition-colors"
         >
-          {{ saving ? 'Saving...' : 'Save Settings' }}
+          {{ saving ? t('settings.saving') : t('settings.saveSettings') }}
         </button>
-        <span v-if="saved" class="text-sm text-green-400">Settings saved successfully.</span>
+        <span v-if="saved" class="text-sm text-green-400">{{ t('settings.savedSuccessfully') }}</span>
       </div>
     </div>
   </div>

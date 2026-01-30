@@ -34,8 +34,8 @@ overrides:
   # RPM packages for RHEL/CentOS/AlmaLinux/Rocky Linux (WebKit 4.0)
   rpm:
     depends:
-      - gtk3
-      - webkit2gtk4.1
+      - "libgtk-3.so.0()(64bit)"
+      - "libwebkit2gtk-4.1.so.0()(64bit)"
   
   # Arch Linux packages (WebKit 4.1)  
   archlinux:

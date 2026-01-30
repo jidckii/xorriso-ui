@@ -12,14 +12,14 @@ tasks:
     dir: frontend
     sources:
       - package.json
-      - package-lock.json
+      - yarn.lock
     generates:
       - node_modules/*
     preconditions:
-      - sh: npm version
-        msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
+      - sh: yarn --version
+        msg: "Looks like yarn isn't installed. Install it with: npm install -g yarn"
     cmds:
-      - npm install
+      - yarn install
 
   build:frontend:
     label: build:frontend (PRODUCTION={{.PRODUCTION}})
@@ -36,7 +36,7 @@ tasks:
           BUILD_FLAGS:
             ref: .BUILD_FLAGS
     cmds:
-      - npm run {{.BUILD_COMMAND}} -q
+      - yarn {{.BUILD_COMMAND}}
     env:
       PRODUCTION: '{{.PRODUCTION | default "false"}}'
     vars:
@@ -61,15 +61,10 @@ tasks:
       - wails3 generate bindings -f '{{.BUILD_FLAGS}}' -clean=true
 
   generate:icons:
-    summary: Generates Windows `.ico` and Mac `.icns` files from an image
+    summary: Generates icon files from an image (Linux-only, no-op)
     dir: build
-    sources:
-      - "appicon.png"
-    generates:
-      - "darwin/icons.icns"
-      - "windows/icon.ico"
     cmds:
-      - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico
+      - echo "Linux-only build, skipping icon generation"
 
   dev:frontend:
     summary: Runs the frontend in development mode
@@ -77,7 +72,7 @@ tasks:
     deps:
       - task: install:frontend:deps
     cmds:
-      - npm run dev -- --port {{.VITE_PORT}} --strictPort
+      - yarn dev --port {{.VITE_PORT}} --strictPort
 
   update:build-assets:
     summary: Updates the build assets

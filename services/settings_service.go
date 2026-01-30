@@ -19,6 +19,8 @@ type AppSettings struct {
 	BDXLSafeMode       bool               `json:"bdxlSafeMode"`
 	AutoEject          bool               `json:"autoEject"`
 	DevicePollInterval int                `json:"devicePollInterval"`
+	Language           string             `json:"language"`
+	Theme              string             `json:"theme"`
 }
 
 type SettingsService struct {
@@ -68,6 +70,8 @@ func (s *SettingsService) GetSettings() (*AppSettings, error) {
 		BDXLSafeMode:       true,
 		AutoEject:          true,
 		DevicePollInterval: 5,
+		Language:           "en",
+		Theme:              "dark",
 	}
 
 	data, err := os.ReadFile(s.settingsPath())

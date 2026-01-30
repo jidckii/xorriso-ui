@@ -1,7 +1,11 @@
 <script setup>
-import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useThemeStore } from '../../stores/themeStore'
 import Button from '../ui/Button.vue'
 import DeviceSelector from '../device/DeviceSelector.vue'
+
+const { t } = useI18n()
+const themeStore = useThemeStore()
 
 defineProps({
   devices: { type: Array, default: () => [] },
@@ -18,7 +22,7 @@ const emit = defineEmits([
 </script>
 
 <template>
-  <header class="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center gap-4">
+  <header class="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 px-4 py-2 flex items-center gap-4">
     <!-- App name -->
     <div class="flex items-center gap-2 mr-4">
       <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,7 +30,7 @@ const emit = defineEmits([
         <circle cx="12" cy="12" r="3" stroke-width="1.5" />
         <circle cx="12" cy="12" r="6" stroke-width="0.5" opacity="0.5" />
       </svg>
-      <span class="text-lg font-bold text-gray-100 whitespace-nowrap">xorriso-ui</span>
+      <span class="text-lg font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">xorriso-ui</span>
     </div>
 
     <!-- Toolbar buttons -->
@@ -35,24 +39,24 @@ const emit = defineEmits([
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        New
+        {{ t('header.new') }}
       </Button>
       <Button variant="ghost" size="sm" @click="emit('open-project')">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
-        Open
+        {{ t('header.open') }}
       </Button>
       <Button variant="ghost" size="sm" @click="emit('save-project')">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
         </svg>
-        Save
+        {{ t('header.save') }}
       </Button>
 
-      <div class="w-px h-6 bg-gray-700 mx-2" />
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-2" />
 
       <Button variant="primary" size="sm" @click="emit('burn')">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,12 +65,41 @@ const emit = defineEmits([
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
         </svg>
-        Burn
+        {{ t('header.burn') }}
       </Button>
     </div>
 
     <!-- Spacer -->
     <div class="flex-1" />
+
+    <!-- Theme toggle -->
+    <button
+      @click="themeStore.toggleTheme()"
+      class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+    >
+      <!-- Sun icon (shown in dark mode, click to switch to light) -->
+      <svg v-if="themeStore.isDark" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+      <!-- Moon icon (shown in light mode, click to switch to dark) -->
+      <svg v-else class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+      </svg>
+    </button>
+
+    <!-- Settings -->
+    <router-link
+      to="/settings"
+      class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+    >
+      <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </router-link>
 
     <!-- Device selector -->
     <DeviceSelector

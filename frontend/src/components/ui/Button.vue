@@ -23,11 +23,11 @@ const variantClasses = computed(() => {
     primary:
       'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 disabled:bg-blue-800',
     secondary:
-      'bg-gray-600 hover:bg-gray-500 text-gray-100 focus:ring-gray-500 disabled:bg-gray-700',
+      'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-900 dark:text-gray-100 focus:ring-gray-500 disabled:bg-gray-400 dark:disabled:bg-gray-700',
     danger:
       'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 disabled:bg-red-800',
     ghost:
-      'bg-transparent hover:bg-gray-700 text-gray-300 focus:ring-gray-500',
+      'bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-gray-500',
   }
   return map[props.variant]
 })
@@ -45,7 +45,7 @@ const sizeClasses = computed(() => {
 <template>
   <button
     :class="[
-      'inline-flex items-center justify-center gap-1.5 rounded font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed',
+      'inline-flex items-center justify-center gap-1.5 rounded font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed',
       variantClasses,
       sizeClasses,
     ]"

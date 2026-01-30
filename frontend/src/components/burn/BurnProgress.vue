@@ -1,6 +1,9 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ProgressBar from '../ui/ProgressBar.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   percent: { type: Number, default: 0 },
@@ -27,6 +30,15 @@ const phaseIcon = computed(() => {
   return map[props.phase] || map.Writing
 })
 
+const phaseLabel = computed(() => {
+  const map = {
+    Writing: t('burnProgress.writing'),
+    Formatting: t('burnProgress.formatting'),
+    Verifying: t('burnProgress.verifying'),
+  }
+  return map[props.phase] || props.phase
+})
+
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B'
   if (bytes >= 1e9) return (bytes / 1e9).toFixed(2) + ' GB'
@@ -43,12 +55,12 @@ function formatBytes(bytes) {
         <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="phaseIcon" />
         </svg>
-        <span class="text-sm font-medium text-gray-300 uppercase tracking-wider">
-          {{ phase }}
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+          {{ phaseLabel }}
         </span>
       </div>
-      <div class="text-5xl font-bold text-gray-100 tabular-nums">
-        {{ percent.toFixed(0) }}<span class="text-2xl text-gray-400">%</span>
+      <div class="text-5xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
+        {{ percent.toFixed(0) }}<span class="text-2xl text-gray-600 dark:text-gray-400">%</span>
       </div>
     </div>
 
@@ -58,25 +70,25 @@ function formatBytes(bytes) {
     <!-- Stats grid -->
     <div class="grid grid-cols-2 gap-3">
       <!-- Speed -->
-      <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-        <div class="text-xs text-gray-500 mb-1">Speed</div>
-        <div class="text-sm text-gray-200 font-medium">
+      <div class="bg-gray-100/50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-300 dark:border-gray-700">
+        <div class="text-xs text-gray-500 mb-1">{{ t('burnProgress.speed') }}</div>
+        <div class="text-sm text-gray-800 dark:text-gray-200 font-medium">
           {{ speed || '--' }}
         </div>
       </div>
 
       <!-- ETA -->
-      <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-        <div class="text-xs text-gray-500 mb-1">Time remaining</div>
-        <div class="text-sm text-gray-200 font-medium">
+      <div class="bg-gray-100/50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-300 dark:border-gray-700">
+        <div class="text-xs text-gray-500 mb-1">{{ t('burnProgress.timeRemaining') }}</div>
+        <div class="text-sm text-gray-800 dark:text-gray-200 font-medium">
           {{ eta || '--:--' }}
         </div>
       </div>
 
       <!-- Bytes written -->
-      <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-        <div class="text-xs text-gray-500 mb-1">Written</div>
-        <div class="text-sm text-gray-200 font-medium">
+      <div class="bg-gray-100/50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-300 dark:border-gray-700">
+        <div class="text-xs text-gray-500 mb-1">{{ t('burnProgress.written') }}</div>
+        <div class="text-sm text-gray-800 dark:text-gray-200 font-medium">
           {{ formatBytes(bytesWritten) }}
           <span v-if="bytesTotal" class="text-gray-500">
             / {{ formatBytes(bytesTotal) }}
@@ -85,10 +97,10 @@ function formatBytes(bytes) {
       </div>
 
       <!-- FIFO buffer -->
-      <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-        <div class="text-xs text-gray-500 mb-1">FIFO Buffer</div>
+      <div class="bg-gray-100/50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-300 dark:border-gray-700">
+        <div class="text-xs text-gray-500 mb-1">{{ t('burnProgress.fifoBuffer') }}</div>
         <div class="flex items-center gap-2">
-          <div class="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-300"
               :class="{
@@ -99,7 +111,7 @@ function formatBytes(bytes) {
               :style="{ width: fifoPercent + '%' }"
             />
           </div>
-          <span class="text-xs text-gray-400 tabular-nums w-8 text-right">
+          <span class="text-xs text-gray-600 dark:text-gray-400 tabular-nums w-8 text-right">
             {{ fifoPercent }}%
           </span>
         </div>

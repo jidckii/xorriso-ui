@@ -1,5 +1,8 @@
 <script setup>
 import { ref, watch, nextTick, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   lines: {
@@ -38,11 +41,11 @@ function onScroll() {
 <template>
   <div
     ref="logContainer"
-    class="bg-gray-950 border border-gray-700 rounded font-mono text-xs text-gray-400 p-3 overflow-y-auto max-h-64 min-h-[100px]"
+    class="bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded font-mono text-xs text-gray-600 dark:text-gray-400 p-3 overflow-y-auto max-h-64 min-h-[100px]"
     @scroll="onScroll"
   >
-    <div v-if="lines.length === 0" class="text-gray-600 italic">
-      No log output yet...
+    <div v-if="lines.length === 0" class="text-gray-500 dark:text-gray-600 italic">
+      {{ t('burnProgress.noLogOutput') }}
     </div>
     <div
       v-for="(line, idx) in lines"

@@ -1,5 +1,8 @@
 <script setup>
 import { reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   availableSpeeds: {
@@ -25,12 +28,12 @@ defineExpose({ options })
   <div class="space-y-4">
     <!-- Speed -->
     <div>
-      <label class="block text-sm font-medium text-gray-300 mb-1">Write Speed</label>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('burnOptions.writeSpeed') }}</label>
       <select
         v-model.number="options.speed"
-        class="w-full bg-gray-700 text-gray-200 text-sm rounded px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-2 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        <option :value="0">Auto (Maximum)</option>
+        <option :value="0">{{ t('burnOptions.autoMaximum') }}</option>
         <option
           v-for="speed in availableSpeeds"
           :key="speed"
@@ -43,14 +46,14 @@ defineExpose({ options })
 
     <!-- Write Mode -->
     <div>
-      <label class="block text-sm font-medium text-gray-300 mb-1">Write Mode</label>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('burnOptions.writeMode') }}</label>
       <select
         v-model="options.writeMode"
-        class="w-full bg-gray-700 text-gray-200 text-sm rounded px-3 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-2 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        <option value="auto">Auto</option>
-        <option value="tao">TAO (Track At Once)</option>
-        <option value="sao">SAO (Session At Once)</option>
+        <option value="auto">{{ t('burnOptions.auto') }}</option>
+        <option value="tao">{{ t('burnOptions.tao') }}</option>
+        <option value="sao">{{ t('burnOptions.sao') }}</option>
       </select>
     </div>
 
@@ -60,11 +63,11 @@ defineExpose({ options })
         <input
           v-model="options.verify"
           type="checkbox"
-          class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+          class="w-4 h-4 rounded border-gray-400 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900"
         />
         <div>
-          <span class="text-sm text-gray-200 group-hover:text-white">Verify after burn</span>
-          <p class="text-xs text-gray-500">Read back and compare data after writing</p>
+          <span class="text-sm text-gray-800 dark:text-gray-200 group-hover:text-black dark:group-hover:text-white">{{ t('burnOptions.verifyAfterBurn') }}</span>
+          <p class="text-xs text-gray-500">{{ t('burnOptions.verifyDescription') }}</p>
         </div>
       </label>
 
@@ -72,11 +75,11 @@ defineExpose({ options })
         <input
           v-model="options.dummyMode"
           type="checkbox"
-          class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+          class="w-4 h-4 rounded border-gray-400 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900"
         />
         <div>
-          <span class="text-sm text-gray-200 group-hover:text-white">Dummy mode (test)</span>
-          <p class="text-xs text-gray-500">Simulate burn without writing to disc</p>
+          <span class="text-sm text-gray-800 dark:text-gray-200 group-hover:text-black dark:group-hover:text-white">{{ t('burnOptions.dummyMode') }}</span>
+          <p class="text-xs text-gray-500">{{ t('burnOptions.dummyDescription') }}</p>
         </div>
       </label>
 
@@ -84,11 +87,11 @@ defineExpose({ options })
         <input
           v-model="options.finalize"
           type="checkbox"
-          class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+          class="w-4 h-4 rounded border-gray-400 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900"
         />
         <div>
-          <span class="text-sm text-gray-200 group-hover:text-white">Finalize disc</span>
-          <p class="text-xs text-gray-500">Close the disc so no more data can be added</p>
+          <span class="text-sm text-gray-800 dark:text-gray-200 group-hover:text-black dark:group-hover:text-white">{{ t('burnOptions.finalizeDisc') }}</span>
+          <p class="text-xs text-gray-500">{{ t('burnOptions.finalizeDescription') }}</p>
         </div>
       </label>
 
@@ -96,11 +99,11 @@ defineExpose({ options })
         <input
           v-model="options.ejectAfter"
           type="checkbox"
-          class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+          class="w-4 h-4 rounded border-gray-400 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900"
         />
         <div>
-          <span class="text-sm text-gray-200 group-hover:text-white">Eject after burn</span>
-          <p class="text-xs text-gray-500">Open disc tray when finished</p>
+          <span class="text-sm text-gray-800 dark:text-gray-200 group-hover:text-black dark:group-hover:text-white">{{ t('burnOptions.ejectAfterBurn') }}</span>
+          <p class="text-xs text-gray-500">{{ t('burnOptions.ejectDescription') }}</p>
         </div>
       </label>
 
@@ -108,11 +111,11 @@ defineExpose({ options })
         <input
           v-model="options.streamRecording"
           type="checkbox"
-          class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900"
+          class="w-4 h-4 rounded border-gray-400 dark:border-gray-600 bg-gray-200 dark:bg-gray-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900"
         />
         <div>
-          <span class="text-sm text-gray-200 group-hover:text-white">Stream recording</span>
-          <p class="text-xs text-gray-500">For Blu-ray discs: faster writing, no defect management</p>
+          <span class="text-sm text-gray-800 dark:text-gray-200 group-hover:text-black dark:group-hover:text-white">{{ t('burnOptions.streamRecording') }}</span>
+          <p class="text-xs text-gray-500">{{ t('burnOptions.streamDescription') }}</p>
         </div>
       </label>
     </div>

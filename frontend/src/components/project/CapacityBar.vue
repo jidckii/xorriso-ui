@@ -1,5 +1,8 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   usedBytes: { type: Number, default: 0 },
@@ -19,13 +22,13 @@ const discSizes = {
 
 // Tick marks for the bar — always show all standard sizes up to the max visible
 const allTicks = [
-  { label: 'CD 700MB', bytes: 700 * 1024 * 1024 },
-  { label: 'DVD 4.7GB', bytes: 4.7e9 },
-  { label: 'DVD-DL 8.5GB', bytes: 8.5e9 },
-  { label: 'BD 25GB', bytes: 25e9 },
-  { label: 'BD-DL 50GB', bytes: 50e9 },
-  { label: 'BDXL 100GB', bytes: 100e9 },
-  { label: 'BDXL 128GB', bytes: 128e9 },
+  { label: 'capacityBar.cd700', bytes: 700 * 1024 * 1024 },
+  { label: 'capacityBar.dvd', bytes: 4.7e9 },
+  { label: 'capacityBar.dvdDl', bytes: 8.5e9 },
+  { label: 'capacityBar.bd', bytes: 25e9 },
+  { label: 'capacityBar.bdDl', bytes: 50e9 },
+  { label: 'capacityBar.bdxl100', bytes: 100e9 },
+  { label: 'capacityBar.bdxl128', bytes: 128e9 },
 ]
 
 const currentCapacity = computed(() => {
@@ -74,15 +77,15 @@ function formatBytes(bytes) {
 <template>
   <div class="w-full space-y-1">
     <!-- Used / Total text -->
-    <div class="flex justify-between text-xs text-gray-400">
-      <span>{{ formatBytes(usedBytes) }} used</span>
+    <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+      <span>{{ formatBytes(usedBytes) }} {{ t('capacityBar.used') }}</span>
       <span>{{ formatBytes(currentCapacity) }} ({{ mediaType }})</span>
     </div>
 
     <!-- Bar with ticks -->
     <div class="relative">
       <!-- Background bar -->
-      <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden relative">
+      <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden relative">
         <!-- Used portion -->
         <div
           :class="['h-full rounded-full transition-all duration-500', barColor]"
@@ -103,9 +106,9 @@ function formatBytes(bytes) {
           class="absolute flex flex-col items-center"
           :style="{ left: tickPosition(tick.bytes) + '%', transform: 'translateX(-50%)' }"
         >
-          <div class="w-px h-2 bg-gray-600" />
+          <div class="w-px h-2 bg-gray-400 dark:bg-gray-600" />
           <span class="text-[10px] text-gray-500 whitespace-nowrap mt-0.5">
-            {{ tick.label }}
+            {{ t(tick.label) }}
           </span>
         </div>
       </div>
@@ -116,7 +119,7 @@ function formatBytes(bytes) {
       v-if="usagePercent > 100"
       class="text-xs text-red-400 font-medium"
     >
-      Overflow: {{ formatBytes(usedBytes - currentCapacity) }} over capacity!
+      {{ t('capacityBar.overflow') }}: {{ formatBytes(usedBytes - currentCapacity) }}!
     </div>
   </div>
 </template>
