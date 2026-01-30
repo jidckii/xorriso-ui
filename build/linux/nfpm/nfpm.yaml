@@ -11,8 +11,8 @@ section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
 description: "Modern disc burning GUI"
-vendor: "My Company"
-homepage: "https://wails.io"
+vendor: "Evgeniy Medvedev"
+homepage: "https://github.com/jidckii/xorriso-ui"
 license: "MIT"
 release: "1"
 
@@ -28,20 +28,25 @@ contents:
 depends:
   - libgtk-3-0
   - libwebkit2gtk-4.1-0
+  - xorriso
+  - ffmpeg
 
-# Distribution-specific overrides for different package formats and WebKit versions
 overrides:
-  # RPM packages for RHEL/CentOS/AlmaLinux/Rocky Linux (WebKit 4.0)
+  # RPM packages (WebKit 4.1)
   rpm:
     depends:
       - "libgtk-3.so.0()(64bit)"
       - "libwebkit2gtk-4.1.so.0()(64bit)"
+      - xorriso
+      - ffmpeg
   
   # Arch Linux packages (WebKit 4.1)  
   archlinux:
     depends:
       - gtk3
       - webkit2gtk-4.1
+      - xorriso
+      - ffmpeg
 
 # scripts section to ensure desktop database is updated after install
 scripts:
