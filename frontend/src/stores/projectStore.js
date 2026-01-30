@@ -10,6 +10,7 @@ import {
   RemoveEntry,
   CalculateSize,
   GetHomeDirectory,
+  ListMountPoints,
 } from '../../bindings/xorriso-ui/services/projectservice.js'
 import { useTabStore } from './tabStore'
 
@@ -117,6 +118,14 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  async function listMountPoints() {
+    try {
+      return await ListMountPoints()
+    } catch {
+      return []
+    }
+  }
+
   return {
     browseLoading,
     newProject,
@@ -128,6 +137,7 @@ export const useProjectStore = defineStore('project', () => {
     calculateSize,
     browseDirectory,
     getHomeDirectory,
+    listMountPoints,
     formatBytes,
   }
 })

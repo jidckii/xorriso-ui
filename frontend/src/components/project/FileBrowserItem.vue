@@ -9,6 +9,7 @@ const props = defineProps({
   dirChildren: { type: Object, required: true },
   selectedPaths: { type: Set, required: true },
   formatBytes: { type: Function, required: true },
+  showHidden: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['toggle-expand', 'toggle-selection', 'dblclick'])
@@ -22,7 +23,9 @@ function isSelected(entry) {
 }
 
 function getChildren(entry) {
-  return props.dirChildren[entry.sourcePath] || []
+  const all = props.dirChildren[entry.sourcePath] || []
+  if (props.showHidden) return all
+  return all.filter(c => !c.name.startsWith('.'))
 }
 </script>
 
@@ -79,6 +82,7 @@ function getChildren(entry) {
       :dir-children="dirChildren"
       :selected-paths="selectedPaths"
       :format-bytes="formatBytes"
+      :show-hidden="showHidden"
       @toggle-expand="emit('toggle-expand', $event)"
       @toggle-selection="(entry, ev) => emit('toggle-selection', entry, ev)"
       @dblclick="emit('dblclick', $event)"

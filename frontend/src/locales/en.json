@@ -18,7 +18,10 @@
     "capacity": "Capacity",
     "noFilesAdded": "No files added to project",
     "dragFilesHere": "Drag files here or use the browser to add files",
-    "emptyDirectory": "Empty directory"
+    "emptyDirectory": "Empty directory",
+    "showHidden": "Show hidden files",
+    "hideHidden": "Hide hidden files",
+    "goUp": "Up"
   },
   "burn": {
     "title": "Burn Disc",
