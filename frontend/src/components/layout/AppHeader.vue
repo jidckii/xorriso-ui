@@ -1,23 +1,18 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { useThemeStore } from '../../stores/themeStore'
+import { useDeviceStore } from '../../stores/deviceStore'
 import Button from '../ui/Button.vue'
-import DeviceSelector from '../device/DeviceSelector.vue'
 
 const { t } = useI18n()
 const themeStore = useThemeStore()
-
-defineProps({
-  devices: { type: Array, default: () => [] },
-  selectedDevice: { type: String, default: '' },
-})
+const deviceStore = useDeviceStore()
 
 const emit = defineEmits([
   'new-project',
   'open-project',
   'save-project',
   'burn',
-  'update:selectedDevice',
 ])
 </script>
 
@@ -77,12 +72,10 @@ const emit = defineEmits([
       @click="themeStore.toggleTheme()"
       class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
     >
-      <!-- Sun icon (shown in dark mode, click to switch to light) -->
       <svg v-if="themeStore.isDark" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
-      <!-- Moon icon (shown in light mode, click to switch to dark) -->
       <svg v-else class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -101,11 +94,27 @@ const emit = defineEmits([
       </svg>
     </router-link>
 
-    <!-- Device selector -->
-    <DeviceSelector
-      :devices="devices"
-      :model-value="selectedDevice"
-      @update:model-value="emit('update:selectedDevice', $event)"
-    />
+    <!-- Device selector — connected to deviceStore -->
+    <div class="relative">
+      <select
+        :value="deviceStore.currentDevicePath || ''"
+        @change="deviceStore.selectDevice($event.target.value)"
+        class="appearance-none bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 pr-8 border border-gray-400 dark:border-gray-600 hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer min-w-[200px]"
+      >
+        <option value="" disabled>{{ t('device.selectDevice') }}</option>
+        <option
+          v-for="dev in deviceStore.devices"
+          :key="dev.path"
+          :value="dev.path"
+        >
+          {{ dev.vendor }} {{ dev.model }} ({{ dev.path }})
+        </option>
+      </select>
+      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+        <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
   </header>
 </template>

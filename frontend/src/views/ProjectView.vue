@@ -289,19 +289,16 @@ function goToBurn() {
       </button>
 
       <div v-show="devicePanelOpen" class="p-3 space-y-4 overflow-y-auto h-full">
-        <!-- Device Selector -->
-        <div>
-          <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{{ t('device.device') }}</label>
-          <select
-            :value="deviceStore.currentDevicePath"
-            @change="deviceStore.selectDevice(($event.target).value)"
-            class="w-full px-2 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
-          >
-            <option v-if="deviceStore.devices.length === 0" value="" disabled>{{ t('device.noDevicesFound') }}</option>
-            <option v-for="dev in deviceStore.devices" :key="dev.path" :value="dev.path">
-              {{ dev.name }}
-            </option>
-          </select>
+        <!-- Device Info (no selector — use the one in header) -->
+        <div v-if="deviceStore.currentDevice">
+          <h3 class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{{ t('device.deviceInfo') }}</h3>
+          <div class="text-xs text-gray-700 dark:text-gray-300 space-y-1">
+            <div class="font-medium">{{ deviceStore.currentDevice.vendor }} {{ deviceStore.currentDevice.model }}</div>
+            <div class="text-gray-500">{{ deviceStore.currentDevice.path }}</div>
+          </div>
+        </div>
+        <div v-else class="text-xs text-gray-500 dark:text-gray-600 text-center py-2">
+          {{ t('device.noDeviceSelected') }}
         </div>
 
         <!-- Media Info -->
@@ -310,19 +307,19 @@ function goToBurn() {
           <div class="space-y-1 text-xs text-gray-700 dark:text-gray-300">
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('device.type') }}:</span>
-              <span>{{ deviceStore.mediaInfo.mediaType }}</span>
+              <span>{{ deviceStore.mediaInfo.mediaType || '—' }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('device.status') }}:</span>
-              <span>{{ deviceStore.mediaInfo.mediaStatus }}</span>
+              <span>{{ deviceStore.mediaInfo.mediaStatus || '—' }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('device.capacity') }}:</span>
-              <span>{{ formatBytes(deviceStore.mediaInfo.capacityBytes) }}</span>
+              <span>{{ formatBytes(deviceStore.mediaInfo.totalCapacity) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('device.free') }}:</span>
-              <span>{{ formatBytes(deviceStore.mediaInfo.freeBytes) }}</span>
+              <span>{{ formatBytes(deviceStore.mediaInfo.freeSpace) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('device.sessions') }}:</span>
@@ -331,8 +328,8 @@ function goToBurn() {
           </div>
         </div>
 
-        <div v-else class="text-xs text-gray-500 dark:text-gray-600 text-center py-4">
-          {{ t('device.noMediaDetected') }}
+        <div v-else-if="deviceStore.currentDevice" class="text-xs text-gray-500 dark:text-gray-600 text-center py-4">
+          {{ t('device.noMediaInserted') }}
         </div>
 
         <!-- Actions -->

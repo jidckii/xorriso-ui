@@ -127,8 +127,8 @@ func ParseProfiles(lines []string) []models.MediaProfile {
 }
 
 // ParseMediaSpace parses output of -tell_media_space
-// Line: "Media space  : NNNNN  (free blocks)"
-var mediaSpaceRe = regexp.MustCompile(`(\d+)s\s+\(`)
+// Line: "Media space  : 359844s"
+var mediaSpaceRe = regexp.MustCompile(`Media space\s*:\s*(\d+)s`)
 
 func ParseMediaSpace(lines []string) (freeBlocks int64, err error) {
 	for _, line := range lines {
@@ -143,4 +143,36 @@ func ParseMediaSpace(lines []string) (freeBlocks int64, err error) {
 		return freeBlocks, nil
 	}
 	return 0, nil
+}
+
+// ParseMediaBlocks parses "Media blocks : 0 readable , 359844 writable , 359844 overall"
+var mediaBlocksRe = regexp.MustCompile(`Media blocks\s*:\s*(\d+)\s+readable\s*,\s*(\d+)\s+writable\s*,\s*(\d+)\s+overall`)
+
+func ParseMediaBlocks(lines []string) (readable, writable, overall int64) {
+	for _, line := range lines {
+		matches := mediaBlocksRe.FindStringSubmatch(line)
+		if matches == nil {
+			continue
+		}
+		readable, _ = strconv.ParseInt(matches[1], 10, 64)
+		writable, _ = strconv.ParseInt(matches[2], 10, 64)
+		overall, _ = strconv.ParseInt(matches[3], 10, 64)
+		return
+	}
+	return
+}
+
+// ParseMediaSummary parses "Media summary: 0 sessions, 0 data blocks, 0 data,  703m free"
+var mediaSummaryRe = regexp.MustCompile(`Media summary\s*:\s*(\d+)\s+sessions`)
+
+func ParseMediaSummary(lines []string) int {
+	for _, line := range lines {
+		matches := mediaSummaryRe.FindStringSubmatch(line)
+		if matches == nil {
+			continue
+		}
+		n, _ := strconv.Atoi(matches[1])
+		return n
+	}
+	return 0
 }

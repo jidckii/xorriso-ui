@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -159,12 +160,25 @@ func (s *DeviceService) GetMediaInfo(devicePath string) (*models.MediaInfo, erro
 		DevicePath: devicePath,
 	}
 
-	// Parse media space
-	freeBlocks, _ := xorriso.ParseMediaSpace(result.ResultLines)
+	// All media info comes through the Result channel (R:) in pkt_output mode
+	lines := result.ResultLines
+
+	// Parse media space (free blocks)
+	freeBlocks, _ := xorriso.ParseMediaSpace(lines)
 	info.FreeSpace = freeBlocks * 2048 // blocks are 2048 bytes
 
-	// Parse info lines for media type and status
-	for _, line := range result.InfoLines {
+	// Parse media blocks for total capacity
+	_, _, overall := xorriso.ParseMediaBlocks(lines)
+	info.TotalCapacity = overall * 2048
+
+	// Parse sessions count
+	info.Sessions = xorriso.ParseMediaSummary(lines)
+
+	// Parse used space
+	info.UsedSpace = info.TotalCapacity - info.FreeSpace
+
+	// Parse media type, status, erasable from result lines
+	for _, line := range lines {
 		if strings.Contains(line, "Media current:") {
 			info.MediaType = extractAfterColon(line)
 		}
@@ -195,16 +209,19 @@ func (s *DeviceService) GetSpeeds(devicePath string) ([]models.SpeedDescriptor, 
 	return xorriso.ParseSpeeds(result.ResultLines), nil
 }
 
-// EjectDisc ejects the disc from the drive
+// EjectDisc ejects the disc from the drive using the system eject command.
+// Using eject(1) instead of xorriso because xorriso requires acquiring the
+// device first (which can fail when no recognizable media is present).
 func (s *DeviceService) EjectDisc(devicePath string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err := s.executor.Run(ctx,
-		"-dev", devicePath,
-		"-eject", "all",
-	)
-	return err
+	cmd := exec.CommandContext(ctx, "eject", devicePath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("eject failed: %s: %w", strings.TrimSpace(string(output)), err)
+	}
+	return nil
 }
 
 func (s *DeviceService) pollDevices() {
