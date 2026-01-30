@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"xorriso-ui/pkg/models"
@@ -53,8 +54,13 @@ func (s *SettingsService) settingsPath() string {
 
 // GetSettings loads settings from disk
 func (s *SettingsService) GetSettings() (*AppSettings, error) {
+	xorrisoPath := "xorriso"
+	if p, err := exec.LookPath("xorriso"); err == nil {
+		xorrisoPath = p
+	}
+
 	settings := &AppSettings{
-		XorrisoPath: "/usr/bin/xorriso",
+		XorrisoPath: xorrisoPath,
 		DefaultBurn: models.BurnOptions{
 			Speed:    "auto",
 			Verify:   true,
