@@ -2,12 +2,22 @@ package services
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"golang.org/x/image/draw"
+	"golang.org/x/image/webp"
 
 	"xorriso-ui/pkg/models"
 )
@@ -258,6 +268,88 @@ func unescapeMountPath(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// imageExtensions maps lowercase extensions to MIME types for preview support
+var imageExtensions = map[string]string{
+	".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+	".png": "image/png", ".gif": "image/gif",
+	".webp": "image/webp", ".bmp": "image/bmp",
+}
+
+// GetImagePreview returns a base64 data URL thumbnail for the given image file.
+// maxSize is the maximum width/height in pixels (aspect ratio preserved).
+// Returns empty string for non-image files or files larger than 20MB.
+func (s *ProjectService) GetImagePreview(filePath string, maxSize int) (string, error) {
+	if maxSize <= 0 {
+		maxSize = 200
+	}
+
+	ext := strings.ToLower(filepath.Ext(filePath))
+	_, ok := imageExtensions[ext]
+	if !ok {
+		return "", nil
+	}
+
+	// Skip files larger than 20MB
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return "", err
+	}
+	if info.Size() > 20*1024*1024 {
+		return "", nil
+	}
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	var src image.Image
+	switch ext {
+	case ".jpg", ".jpeg":
+		src, err = jpeg.Decode(f)
+	case ".png":
+		src, err = png.Decode(f)
+	case ".gif":
+		src, err = gif.Decode(f)
+	case ".webp":
+		src, err = webp.Decode(f)
+	case ".bmp":
+		src, _, err = image.Decode(f)
+	default:
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("decode %s: %w", ext, err)
+	}
+
+	// Calculate thumbnail dimensions preserving aspect ratio
+	bounds := src.Bounds()
+	w, h := bounds.Dx(), bounds.Dy()
+	if w <= maxSize && h <= maxSize {
+		// Image is already small enough, encode directly
+	} else if w > h {
+		h = h * maxSize / w
+		w = maxSize
+	} else {
+		w = w * maxSize / h
+		h = maxSize
+	}
+
+	// Resize using bilinear interpolation
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	draw.BiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
+
+	// Encode as JPEG for smaller size
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 80}); err != nil {
+		return "", err
+	}
+
+	dataURL := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
+	return dataURL, nil
 }
 
 func dirSize(path string) (int64, error) {

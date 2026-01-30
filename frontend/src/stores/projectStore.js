@@ -11,6 +11,7 @@ import {
   CalculateSize,
   GetHomeDirectory,
   ListMountPoints,
+  GetImagePreview,
 } from '../../bindings/xorriso-ui/services/projectservice.js'
 import { useTabStore } from './tabStore'
 
@@ -126,6 +127,14 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  async function getImagePreview(filePath, maxSize = 200) {
+    try {
+      return await GetImagePreview(filePath, maxSize)
+    } catch {
+      return ''
+    }
+  }
+
   return {
     browseLoading,
     newProject,
@@ -138,6 +147,7 @@ export const useProjectStore = defineStore('project', () => {
     browseDirectory,
     getHomeDirectory,
     listMountPoints,
+    getImagePreview,
     formatBytes,
   }
 })

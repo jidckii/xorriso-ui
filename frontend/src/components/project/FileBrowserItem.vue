@@ -1,6 +1,8 @@
 <script setup>
+import { ref } from 'vue'
 import { ChevronRight } from 'lucide-vue-next'
 import FileIcon from '../ui/FileIcon.vue'
+import ImagePreviewTooltip from '../ui/ImagePreviewTooltip.vue'
 
 const props = defineProps({
   entry: { type: Object, required: true },
@@ -27,6 +29,36 @@ function getChildren(entry) {
   if (props.showHidden) return all
   return all.filter(c => !c.name.startsWith('.'))
 }
+
+// Image preview tooltip state
+const previewVisible = ref(false)
+const previewX = ref(0)
+const previewY = ref(0)
+
+const imageExts = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'])
+
+function isImageFile(name) {
+  if (!name) return false
+  const dot = name.lastIndexOf('.')
+  if (dot < 0) return false
+  return imageExts.has(name.substring(dot).toLowerCase())
+}
+
+function onMouseEnter(e, entry) {
+  if (entry.isDir || !isImageFile(entry.name)) return
+  previewX.value = e.clientX
+  previewY.value = e.clientY
+  previewVisible.value = true
+}
+
+function onMouseMove(e) {
+  previewX.value = e.clientX
+  previewY.value = e.clientY
+}
+
+function onMouseLeave() {
+  previewVisible.value = false
+}
 </script>
 
 <template>
@@ -37,6 +69,9 @@ function getChildren(entry) {
     :style="{ paddingLeft: (depth * 16 + 8) + 'px', paddingRight: '8px' }"
     @click="emit('toggle-selection', entry, $event)"
     @dblclick="emit('dblclick', entry)"
+    @mouseenter="onMouseEnter($event, entry)"
+    @mousemove="onMouseMove"
+    @mouseleave="onMouseLeave"
   >
     <!-- Expand chevron for directories -->
     <button
@@ -70,6 +105,14 @@ function getChildren(entry) {
       {{ formatBytes(entry.size) }}
     </span>
   </div>
+
+  <!-- Image preview tooltip -->
+  <ImagePreviewTooltip
+    :file-path="entry.sourcePath"
+    :visible="previewVisible"
+    :x="previewX"
+    :y="previewY"
+  />
 
   <!-- Recursive children -->
   <template v-if="entry.isDir && isExpanded(entry)">
