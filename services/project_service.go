@@ -295,15 +295,6 @@ func (s *ProjectService) GetImagePreview(filePath string, maxSize int) (string, 
 		return "", nil
 	}
 
-	// Skip files larger than 20MB
-	info, err := os.Stat(filePath)
-	if err != nil {
-		return "", err
-	}
-	if info.Size() > 20*1024*1024 {
-		return "", nil
-	}
-
 	f, err := os.Open(filePath)
 	if err != nil {
 		return "", err

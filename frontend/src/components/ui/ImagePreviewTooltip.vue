@@ -12,6 +12,7 @@ const props = defineProps({
 const projectStore = useProjectStore()
 const previewUrl = ref('')
 const loading = ref(false)
+const showBelow = ref(false)
 let loadTimer = null
 let currentPath = ''
 
@@ -27,6 +28,11 @@ function isImageFile(path) {
   const ext = path.substring(path.lastIndexOf('.')).toLowerCase()
   return imageExts.has(ext)
 }
+
+watch(() => props.y, (y) => {
+  // If cursor is near top of viewport (<230px), show tooltip below cursor
+  showBelow.value = y < 230
+})
 
 watch(() => props.visible, (visible) => {
   if (!visible) {
@@ -85,7 +91,7 @@ defineExpose({ isImageFile })
     <div
       v-if="visible && (previewUrl || loading) && isImageFile(filePath)"
       class="fixed z-50 pointer-events-none"
-      :style="{ left: x + 'px', top: y + 'px', transform: 'translate(12px, -50%)' }"
+      :style="{ left: x + 'px', top: y + 'px', transform: showBelow ? 'translate(-50%, 12px)' : 'translate(-50%, calc(-100% - 12px))' }"
     >
       <div class="bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-1.5 max-w-[220px]">
         <img

@@ -7,7 +7,7 @@ const props = defineProps({
   size: {
     type: String,
     default: 'md',
-    validator: (v) => ['sm', 'md', 'lg'].includes(v),
+    validator: (v) => ['sm', 'md', 'lg', 'xl'].includes(v),
   },
 })
 
@@ -18,6 +18,7 @@ const sizeClass = computed(() => {
     sm: 'max-w-sm',
     md: 'max-w-lg',
     lg: 'max-w-3xl',
+    xl: 'max-w-5xl',
   }
   return map[props.size]
 })
