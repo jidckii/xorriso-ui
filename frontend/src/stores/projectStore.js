@@ -9,6 +9,7 @@ import {
   AddFiles,
   RemoveEntry,
   CalculateSize,
+  GetHomeDirectory,
 } from '../../bindings/xorriso-ui/services/projectservice.js'
 import { useTabStore } from './tabStore'
 
@@ -108,6 +109,14 @@ export const useProjectStore = defineStore('project', () => {
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`
   }
 
+  async function getHomeDirectory() {
+    try {
+      return await GetHomeDirectory()
+    } catch {
+      return '/'
+    }
+  }
+
   return {
     browseLoading,
     newProject,
@@ -118,6 +127,7 @@ export const useProjectStore = defineStore('project', () => {
     removeEntry,
     calculateSize,
     browseDirectory,
+    getHomeDirectory,
     formatBytes,
   }
 })

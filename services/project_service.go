@@ -72,6 +72,15 @@ func (s *ProjectService) OpenProject(filePath string) (*models.Project, error) {
 	return &project, nil
 }
 
+// GetHomeDirectory returns the current user's home directory
+func (s *ProjectService) GetHomeDirectory() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "/"
+	}
+	return home
+}
+
 // BrowseDirectory returns contents of a local directory
 func (s *ProjectService) BrowseDirectory(path string) ([]models.FileEntry, error) {
 	if path == "" {
