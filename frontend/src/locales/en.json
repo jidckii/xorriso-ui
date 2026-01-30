@@ -211,6 +211,24 @@
     "closeTab": "Close tab",
     "untitledProject": "Untitled Project"
   },
+  "contextMenu": {
+    "open": "Open",
+    "addToProject": "Add to project",
+    "properties": "Properties"
+  },
+  "fileProperties": {
+    "title": "Properties",
+    "loading": "Loading...",
+    "size": "Size",
+    "items": "Items",
+    "type": "Type",
+    "dimensions": "Dimensions",
+    "modified": "Modified",
+    "accessed": "Accessed",
+    "permissions": "Permissions",
+    "owner": "Owner",
+    "close": "Close"
+  },
   "capacityBar": {
     "used": "used",
     "overflow": "Overflow:",

@@ -211,6 +211,24 @@
     "closeTab": "Закрыть вкладку",
     "untitledProject": "Безымянный проект"
   },
+  "contextMenu": {
+    "open": "Открыть",
+    "addToProject": "Добавить в проект",
+    "properties": "Свойства"
+  },
+  "fileProperties": {
+    "title": "Свойства",
+    "loading": "Загрузка...",
+    "size": "Размер",
+    "items": "Элементов",
+    "type": "Тип",
+    "dimensions": "Размеры",
+    "modified": "Изменён",
+    "accessed": "Доступ",
+    "permissions": "Права",
+    "owner": "Владелец",
+    "close": "Закрыть"
+  },
   "capacityBar": {
     "used": "занято",
     "overflow": "Превышение:",

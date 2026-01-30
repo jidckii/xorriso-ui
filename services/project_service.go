@@ -11,13 +11,17 @@ import (
 	"image/jpeg"
 	"image/png"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"golang.org/x/image/draw"
 	"golang.org/x/image/webp"
+
+	"github.com/rwcarlsen/goexif/exif"
 
 	"xorriso-ui/pkg/models"
 )
@@ -350,6 +354,147 @@ func (s *ProjectService) GetImagePreview(filePath string, maxSize int) (string, 
 
 	dataURL := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
 	return dataURL, nil
+}
+
+// OpenWithDefault opens a file or directory with the default application via xdg-open
+func (s *ProjectService) OpenWithDefault(filePath string) error {
+	cmd := exec.Command("xdg-open", filePath)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	return cmd.Start()
+}
+
+// FileProperties contains detailed file metadata
+type FileProperties struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Size        int64  `json:"size"`
+	IsDir       bool   `json:"isDir"`
+	Permissions string `json:"permissions"`
+	Owner       string `json:"owner"`
+	Group       string `json:"group"`
+	ModTime     string `json:"modTime"`
+	AccessTime  string `json:"accessTime"`
+	MimeType    string `json:"mimeType"`
+	// Image-specific
+	ImageWidth  int `json:"imageWidth,omitempty"`
+	ImageHeight int `json:"imageHeight,omitempty"`
+	// Directory-specific
+	ItemCount int `json:"itemCount,omitempty"`
+	// EXIF metadata (photos)
+	CameraModel  string `json:"cameraModel,omitempty"`
+	CameraMake   string `json:"cameraMake,omitempty"`
+	FNumber      string `json:"fNumber,omitempty"`
+	ExposureTime string `json:"exposureTime,omitempty"`
+	ISOSpeed     string `json:"isoSpeed,omitempty"`
+	FocalLength  string `json:"focalLength,omitempty"`
+	FocalLength35 string `json:"focalLength35,omitempty"`
+	Flash        string `json:"flash,omitempty"`
+	DateTaken    string `json:"dateTaken,omitempty"`
+	Orientation  string `json:"orientation,omitempty"`
+	Software     string `json:"software,omitempty"`
+	// Video metadata (via ffprobe)
+	VideoCodec    string `json:"videoCodec,omitempty"`
+	AudioCodec    string `json:"audioCodec,omitempty"`
+	Duration      string `json:"duration,omitempty"`
+	VideoBitrate  string `json:"videoBitrate,omitempty"`
+	AudioBitrate  string `json:"audioBitrate,omitempty"`
+	FrameRate     string `json:"frameRate,omitempty"`
+	SampleRate    string `json:"sampleRate,omitempty"`
+	AudioChannels string `json:"audioChannels,omitempty"`
+}
+
+// GetFileProperties returns detailed metadata for a file or directory
+func (s *ProjectService) GetFileProperties(filePath string) (*FileProperties, error) {
+	info, err := os.Lstat(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	props := &FileProperties{
+		Name:        info.Name(),
+		Path:        filePath,
+		Size:        info.Size(),
+		IsDir:       info.IsDir(),
+		Permissions: info.Mode().Perm().String(),
+		ModTime:     info.ModTime().Format(time.RFC3339),
+	}
+
+	// Get owner/group from syscall stat
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+		props.Owner = fmt.Sprintf("%d", stat.Uid)
+		props.Group = fmt.Sprintf("%d", stat.Gid)
+		props.AccessTime = time.Unix(stat.Atim.Sec, stat.Atim.Nsec).Format(time.RFC3339)
+	}
+
+	if info.IsDir() {
+		// Count items in directory
+		entries, err := os.ReadDir(filePath)
+		if err == nil {
+			props.ItemCount = len(entries)
+		}
+		// Calculate total directory size
+		size, _ := dirSize(filePath)
+		props.Size = size
+	} else {
+		// Detect MIME type via `file --mime-type`
+		props.MimeType = detectMimeType(filePath)
+
+		// Get image dimensions if applicable
+		ext := strings.ToLower(filepath.Ext(filePath))
+		if _, ok := imageExtensions[ext]; ok {
+			w, h := getImageDimensions(filePath, ext)
+			props.ImageWidth = w
+			props.ImageHeight = h
+		}
+
+		// Extract EXIF metadata for photos
+		if ext == ".jpg" || ext == ".jpeg" || ext == ".tiff" || ext == ".tif" {
+			fillExifData(filePath, props)
+		}
+
+		// Extract video/audio metadata via ffprobe
+		if strings.HasPrefix(props.MimeType, "video/") || strings.HasPrefix(props.MimeType, "audio/") {
+			fillMediaMetadata(filePath, props)
+		}
+	}
+
+	return props, nil
+}
+
+// detectMimeType uses the `file` command to get MIME type
+func detectMimeType(path string) string {
+	out, err := exec.Command("file", "--mime-type", "-b", path).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// getImageDimensions returns width and height without fully decoding the image
+func getImageDimensions(path string, ext string) (int, int) {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, 0
+	}
+	defer f.Close()
+
+	var cfg image.Config
+	switch ext {
+	case ".jpg", ".jpeg":
+		cfg, err = jpeg.DecodeConfig(f)
+	case ".png":
+		cfg, err = png.DecodeConfig(f)
+	case ".gif":
+		cfg, err = gif.DecodeConfig(f)
+	case ".webp":
+		cfg, err = webp.DecodeConfig(f)
+	default:
+		cfg, _, err = image.DecodeConfig(f)
+	}
+	if err != nil {
+		return 0, 0
+	}
+	return cfg.Width, cfg.Height
 }
 
 func dirSize(path string) (int64, error) {

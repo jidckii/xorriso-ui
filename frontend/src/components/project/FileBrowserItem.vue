@@ -14,7 +14,7 @@ const props = defineProps({
   showHidden: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['toggle-expand', 'toggle-selection', 'dblclick'])
+const emit = defineEmits(['toggle-expand', 'toggle-selection', 'dblclick', 'contextmenu'])
 
 function isExpanded(entry) {
   return props.expandedDirs.has(entry.sourcePath)
@@ -69,6 +69,7 @@ function onMouseLeave() {
     :style="{ paddingLeft: (depth * 16 + 8) + 'px', paddingRight: '8px' }"
     @click="emit('toggle-selection', entry, $event)"
     @dblclick="emit('dblclick', entry)"
+    @contextmenu.prevent="emit('contextmenu', entry, $event)"
     @mouseenter="onMouseEnter($event, entry)"
     @mousemove="onMouseMove"
     @mouseleave="onMouseLeave"
@@ -129,6 +130,7 @@ function onMouseLeave() {
       @toggle-expand="emit('toggle-expand', $event)"
       @toggle-selection="(entry, ev) => emit('toggle-selection', entry, ev)"
       @dblclick="emit('dblclick', $event)"
+      @contextmenu="(entry, ev) => emit('contextmenu', entry, ev)"
     />
   </template>
 </template>

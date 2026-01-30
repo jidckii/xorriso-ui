@@ -1,8 +1,10 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowUp, Home, Usb, Eye, EyeOff } from 'lucide-vue-next'
+import { ArrowUp, Home, Usb, Eye, EyeOff, ExternalLink, Info, FolderPlus } from 'lucide-vue-next'
 import FileBrowserItem from './FileBrowserItem.vue'
+import ContextMenu from '../ui/ContextMenu.vue'
+import FilePropertiesModal from './FilePropertiesModal.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTabStore } from '../../stores/tabStore'
 
@@ -176,6 +178,60 @@ function formatBytes(bytes) {
   return projectStore.formatBytes(bytes)
 }
 
+// Context menu
+const contextMenu = reactive({
+  show: false,
+  x: 0,
+  y: 0,
+  entry: null,
+})
+
+const contextMenuItems = computed(() => {
+  if (!contextMenu.entry) return []
+  const items = [
+    { label: t('contextMenu.open'), icon: ExternalLink, action: 'open' },
+    { label: t('contextMenu.addToProject'), icon: FolderPlus, action: 'add' },
+    { separator: true },
+    { label: t('contextMenu.properties'), icon: Info, action: 'properties' },
+  ]
+  return items
+})
+
+function onContextMenu(entry, event) {
+  event.preventDefault()
+  event.stopPropagation()
+  contextMenu.entry = entry
+  contextMenu.x = event.clientX
+  contextMenu.y = event.clientY
+  contextMenu.show = true
+}
+
+function onContextMenuSelect(action) {
+  const entry = contextMenu.entry
+  if (!entry) return
+
+  switch (action) {
+    case 'open':
+      projectStore.openWithDefault(entry.sourcePath)
+      break
+    case 'add':
+      if (currentProject.value) {
+        projectStore.addFiles(tabId.value, [entry.sourcePath])
+      }
+      break
+    case 'properties':
+      propertiesModal.filePath = entry.sourcePath
+      propertiesModal.show = true
+      break
+  }
+}
+
+// File properties modal
+const propertiesModal = reactive({
+  show: false,
+  filePath: '',
+})
+
 // Load mount points with change detection
 let mountPollTimer = null
 
@@ -314,6 +370,7 @@ watch(tabId, async () => {
         @toggle-expand="toggleExpand"
         @toggle-selection="toggleSelection"
         @dblclick="onDblClick"
+        @contextmenu="onContextMenu"
       />
     </div>
 
@@ -330,5 +387,22 @@ watch(tabId, async () => {
         {{ selectedPaths.size }} {{ t('project.selected') }}
       </span>
     </div>
+
+    <!-- Context menu -->
+    <ContextMenu
+      :show="contextMenu.show"
+      :x="contextMenu.x"
+      :y="contextMenu.y"
+      :items="contextMenuItems"
+      @close="contextMenu.show = false"
+      @select="onContextMenuSelect"
+    />
+
+    <!-- File properties modal -->
+    <FilePropertiesModal
+      :show="propertiesModal.show"
+      :file-path="propertiesModal.filePath"
+      @close="propertiesModal.show = false"
+    />
   </div>
 </template>

@@ -12,6 +12,8 @@ import {
   GetHomeDirectory,
   ListMountPoints,
   GetImagePreview,
+  OpenWithDefault,
+  GetFileProperties,
 } from '../../bindings/xorriso-ui/services/projectservice.js'
 import { useTabStore } from './tabStore'
 
@@ -135,6 +137,23 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  async function openWithDefault(filePath) {
+    try {
+      await OpenWithDefault(filePath)
+    } catch (error) {
+      console.error('Failed to open file:', error)
+    }
+  }
+
+  async function getFileProperties(filePath) {
+    try {
+      return await GetFileProperties(filePath)
+    } catch (error) {
+      console.error('Failed to get file properties:', error)
+      return null
+    }
+  }
+
   return {
     browseLoading,
     newProject,
@@ -148,6 +167,8 @@ export const useProjectStore = defineStore('project', () => {
     getHomeDirectory,
     listMountPoints,
     getImagePreview,
+    openWithDefault,
+    getFileProperties,
     formatBytes,
   }
 })
