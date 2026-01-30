@@ -5,12 +5,17 @@ import { useI18n } from 'vue-i18n'
 import { useDeviceStore } from '../stores/deviceStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useBurnStore } from '../stores/burnStore'
+import { useTabStore } from '../stores/tabStore'
 
 const { t } = useI18n()
 const router = useRouter()
 const deviceStore = useDeviceStore()
 const projectStore = useProjectStore()
 const burnStore = useBurnStore()
+const tabStore = useTabStore()
+
+// Capture the active project at the time of entering burn view
+const burnProject = computed(() => tabStore.activeProject)
 
 // --- Burn Dialog State ---
 const step = ref('configure') // 'configure' | 'burning' | 'done'
@@ -27,7 +32,7 @@ onMounted(() => {
 // --- Computed ---
 const canBurn = computed(() =>
   deviceStore.currentDevicePath &&
-  projectStore.project.entries.length > 0 &&
+  burnProject.value?.entries?.length > 0 &&
   !burnStore.isBurning
 )
 
@@ -107,19 +112,19 @@ function formatBytes(bytes) {
           <div class="bg-white dark:bg-gray-900 rounded px-4 py-3 text-sm space-y-1">
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('common.name') }}:</span>
-              <span class="text-gray-900 dark:text-gray-100">{{ projectStore.project.name }}</span>
+              <span class="text-gray-900 dark:text-gray-100">{{ burnProject.value?.name }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('common.volumeId') }}:</span>
-              <span class="text-gray-900 dark:text-gray-100">{{ projectStore.project.volumeId }}</span>
+              <span class="text-gray-900 dark:text-gray-100">{{ burnProject.value?.volumeId }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('common.files') }}:</span>
-              <span class="text-gray-900 dark:text-gray-100">{{ projectStore.entryCount }} {{ t('project.items') }}</span>
+              <span class="text-gray-900 dark:text-gray-100">{{ (burnProject.value?.entries?.length || 0) }} {{ t('project.items') }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">{{ t('common.totalSize') }}:</span>
-              <span class="text-gray-900 dark:text-gray-100">{{ projectStore.totalSizeFormatted }}</span>
+              <span class="text-gray-900 dark:text-gray-100">{{ formatBytes(burnProject.value?.totalSize || 0) }}</span>
             </div>
           </div>
         </div>
@@ -133,12 +138,12 @@ function formatBytes(bytes) {
             class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
           >
             <option v-for="dev in deviceStore.devices" :key="dev.path" :value="dev.path">
-              {{ dev.name }} ({{ dev.path }})
+              {{ dev.vendor }} {{ dev.model }} ({{ dev.path }})
             </option>
           </select>
           <div v-if="deviceStore.mediaInfo" class="text-xs text-gray-500">
             {{ deviceStore.mediaInfo.mediaType }} - {{ deviceStore.mediaInfo.mediaStatus }} -
-            {{ formatBytes(deviceStore.mediaInfo.freeBytes) }} {{ t('device.free') }}
+            {{ formatBytes(deviceStore.mediaInfo.freeSpace) }} {{ t('device.free') }}
           </div>
         </div>
 
@@ -149,7 +154,7 @@ function formatBytes(bytes) {
             <div>
               <label class="block text-xs text-gray-500 mb-1">{{ t('burn.speed') }}</label>
               <select
-                v-model="projectStore.project.burnOptions.speed"
+                v-model="burnProject.value.burnOptions.speed"
                 class="w-full px-2 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
               >
                 <option v-for="s in deviceStore.speeds" :key="s.value" :value="s.value">
@@ -160,7 +165,7 @@ function formatBytes(bytes) {
             <div>
               <label class="block text-xs text-gray-500 mb-1">{{ t('burn.burnMode') }}</label>
               <select
-                v-model="projectStore.project.burnOptions.burnMode"
+                v-model="burnProject.value.burnOptions.burnMode"
                 class="w-full px-2 py-1.5 text-sm bg-white dark:bg-gray-900 border border-gray-400 dark:border-gray-600 rounded text-gray-800 dark:text-gray-200 focus:outline-none focus:border-blue-500"
               >
                 <option value="auto">{{ t('burn.autoDao') }}</option>
@@ -172,23 +177,23 @@ function formatBytes(bytes) {
 
           <div class="grid grid-cols-2 gap-x-6 gap-y-2 mt-3">
             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input type="checkbox" v-model="projectStore.project.burnOptions.verify" class="accent-blue-500" />
+              <input type="checkbox" v-model="burnProject.value.burnOptions.verify" class="accent-blue-500" />
               {{ t('burn.verifyAfterBurn') }}
             </label>
             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input type="checkbox" v-model="projectStore.project.burnOptions.eject" class="accent-blue-500" />
+              <input type="checkbox" v-model="burnProject.value.burnOptions.eject" class="accent-blue-500" />
               {{ t('burn.ejectWhenDone') }}
             </label>
             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input type="checkbox" v-model="projectStore.project.burnOptions.dummyMode" class="accent-yellow-500" />
+              <input type="checkbox" v-model="burnProject.value.burnOptions.dummyMode" class="accent-yellow-500" />
               {{ t('burn.simulationMode') }}
             </label>
             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input type="checkbox" v-model="projectStore.project.burnOptions.closeDisc" class="accent-blue-500" />
+              <input type="checkbox" v-model="burnProject.value.burnOptions.closeDisc" class="accent-blue-500" />
               {{ t('burn.closeDisc') }}
             </label>
             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <input type="checkbox" v-model="projectStore.project.burnOptions.streamRecording" class="accent-blue-500" />
+              <input type="checkbox" v-model="burnProject.value.burnOptions.streamRecording" class="accent-blue-500" />
               {{ t('burn.streamRecording') }}
             </label>
           </div>

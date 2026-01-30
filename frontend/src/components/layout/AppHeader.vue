@@ -1,19 +1,34 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useThemeStore } from '../../stores/themeStore'
-import { useDeviceStore } from '../../stores/deviceStore'
+import { useTabStore } from '../../stores/tabStore'
+import { useProjectStore } from '../../stores/projectStore'
 import Button from '../ui/Button.vue'
 
 const { t } = useI18n()
+const router = useRouter()
 const themeStore = useThemeStore()
-const deviceStore = useDeviceStore()
+const tabStore = useTabStore()
+const projectStore = useProjectStore()
 
-const emit = defineEmits([
-  'new-project',
-  'open-project',
-  'save-project',
-  'burn',
-])
+function newProject() {
+  tabStore.addProjectTab(t('tabs.untitledProject'), 'UNTITLED')
+}
+
+function saveProject() {
+  if (tabStore.activeTab?.type === 'project') {
+    projectStore.saveProject(tabStore.activeTabId)
+  }
+}
+
+function goToBurn() {
+  router.push('/burn')
+}
+
+function toggleDiscInfo() {
+  tabStore.toggleDiscInfo()
+}
 </script>
 
 <template>
@@ -30,20 +45,20 @@ const emit = defineEmits([
 
     <!-- Toolbar buttons -->
     <div class="flex items-center gap-1">
-      <Button variant="ghost" size="sm" @click="emit('new-project')">
+      <Button variant="ghost" size="sm" @click="newProject">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         {{ t('header.new') }}
       </Button>
-      <Button variant="ghost" size="sm" @click="emit('open-project')">
+      <Button variant="ghost" size="sm">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
         {{ t('header.open') }}
       </Button>
-      <Button variant="ghost" size="sm" @click="emit('save-project')">
+      <Button variant="ghost" size="sm" @click="saveProject">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -53,7 +68,7 @@ const emit = defineEmits([
 
       <div class="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-2" />
 
-      <Button variant="primary" size="sm" @click="emit('burn')">
+      <Button variant="primary" size="sm" @click="goToBurn">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
@@ -61,6 +76,21 @@ const emit = defineEmits([
             d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
         </svg>
         {{ t('header.burn') }}
+      </Button>
+
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-2" />
+
+      <!-- Disc Info toggle -->
+      <Button
+        :variant="tabStore.showDiscInfo ? 'primary' : 'ghost'"
+        size="sm"
+        @click="toggleDiscInfo"
+      >
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke-width="1.5" />
+          <circle cx="12" cy="12" r="3" stroke-width="1.5" />
+        </svg>
+        {{ t('tabs.discInfo') }}
       </Button>
     </div>
 
@@ -93,28 +123,5 @@ const emit = defineEmits([
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     </router-link>
-
-    <!-- Device selector — connected to deviceStore -->
-    <div class="relative">
-      <select
-        :value="deviceStore.currentDevicePath || ''"
-        @change="deviceStore.selectDevice($event.target.value)"
-        class="appearance-none bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 pr-8 border border-gray-400 dark:border-gray-600 hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer min-w-[200px]"
-      >
-        <option value="" disabled>{{ t('device.selectDevice') }}</option>
-        <option
-          v-for="dev in deviceStore.devices"
-          :key="dev.path"
-          :value="dev.path"
-        >
-          {{ dev.vendor }} {{ dev.model }} ({{ dev.path }})
-        </option>
-      </select>
-      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-        <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-    </div>
   </header>
 </template>

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, reactive, computed } from 'vue'
+import { ref } from 'vue'
 import {
   NewProject,
   OpenProject,
@@ -10,114 +10,84 @@ import {
   RemoveEntry,
   CalculateSize,
 } from '../../bindings/xorriso-ui/services/projectservice.js'
+import { useTabStore } from './tabStore'
 
 export const useProjectStore = defineStore('project', () => {
-  // --- State ---
-  const project = reactive({
-    name: 'Untitled Project',
-    filePath: '',
-    volumeId: 'UNTITLED',
-    entries: [],
-    isoOptions: {
-      udf: true,
-      rockRidge: false,
-      joliet: false,
-      hfsPlus: false,
-      zisofs: false,
-      md5: true,
-      backupMode: false,
-      bootImage: '',
-      bootCatalog: '',
-      efiBootImage: '',
-      bootMode: '',
-    },
-    burnOptions: {
-      speed: 'auto',
-      dummyMode: false,
-      verify: true,
-      closeDisc: false,
-      eject: true,
-      burnMode: 'auto',
-      streamRecording: false,
-      padding: '',
-    },
-    createdAt: '',
-    updatedAt: '',
-  })
-
-  const totalSize = ref(0)
-  const modified = ref(false)
   const browseLoading = ref(false)
 
-  // --- Getters ---
-  const entryCount = computed(() => project.entries.length)
-
-  const totalSizeFormatted = computed(() => formatBytes(totalSize.value))
-
-  // --- Actions ---
-
-  async function newProject(name = 'Untitled Project', volumeId = 'UNTITLED') {
+  async function newProject(tabId, name = 'Untitled Project', volumeId = 'UNTITLED') {
+    const tabStore = useTabStore()
     const result = await NewProject(name, volumeId)
-    Object.assign(project, result)
-    totalSize.value = 0
-    modified.value = false
+    tabStore.updateProjectData(tabId, { ...result, totalSize: 0, modified: false })
+    tabStore.updateTabLabel(tabId, name)
   }
 
-  async function openProject(filePath) {
+  async function openProject(tabId, filePath) {
+    const tabStore = useTabStore()
     const result = await OpenProject(filePath)
-    Object.assign(project, result)
-    modified.value = false
-    await calculateSize()
+    tabStore.updateProjectData(tabId, { ...result, modified: false })
+    tabStore.updateTabLabel(tabId, result.name || filePath)
+    await calculateSize(tabId)
   }
 
-  async function saveProject() {
-    await SaveProject({ ...project })
-    modified.value = false
+  async function saveProject(tabId) {
+    const tabStore = useTabStore()
+    const data = tabStore.getProjectData(tabId)
+    if (!data) return
+    await SaveProject({ ...data })
+    tabStore.updateProjectData(tabId, { modified: false })
   }
 
-  async function saveProjectAs(filePath) {
-    await SaveProjectAs({ ...project }, filePath)
-    project.filePath = filePath
-    modified.value = false
+  async function saveProjectAs(tabId, filePath) {
+    const tabStore = useTabStore()
+    const data = tabStore.getProjectData(tabId)
+    if (!data) return
+    await SaveProjectAs({ ...data }, filePath)
+    tabStore.updateProjectData(tabId, { filePath, modified: false })
   }
 
-  async function addFiles(sourcePaths, destDir = '/') {
+  async function addFiles(tabId, sourcePaths, destDir = '/') {
     if (!sourcePaths || sourcePaths.length === 0) return
+    const tabStore = useTabStore()
+    const data = tabStore.getProjectData(tabId)
+    if (!data) return
 
     try {
-      const result = await AddFiles({ ...project }, sourcePaths, destDir)
-      project.entries = result.entries
-      modified.value = true
-      await calculateSize()
+      const result = await AddFiles({ ...data }, sourcePaths, destDir)
+      tabStore.updateProjectData(tabId, { entries: result.entries, modified: true })
+      await calculateSize(tabId)
     } catch (error) {
       console.error('Failed to add files:', error)
     }
   }
 
-  async function removeEntry(destPath) {
+  async function removeEntry(tabId, destPath) {
+    const tabStore = useTabStore()
+    const data = tabStore.getProjectData(tabId)
+    if (!data) return
+
     try {
-      const result = await RemoveEntry({ ...project }, destPath)
-      project.entries = result.entries
-      modified.value = true
-      await calculateSize()
+      const result = await RemoveEntry({ ...data }, destPath)
+      tabStore.updateProjectData(tabId, { entries: result.entries, modified: true })
+      await calculateSize(tabId)
     } catch (error) {
       console.error('Failed to remove entry:', error)
     }
   }
 
-  async function calculateSize() {
+  async function calculateSize(tabId) {
+    const tabStore = useTabStore()
+    const data = tabStore.getProjectData(tabId)
+    if (!data) return
+
     try {
-      const result = await CalculateSize({ ...project })
-      totalSize.value = result
+      const result = await CalculateSize({ ...data })
+      tabStore.updateProjectData(tabId, { totalSize: result })
     } catch (error) {
       console.error('Failed to calculate size:', error)
     }
   }
 
-  /**
-   * Browse host filesystem directory. Returns array of file entries.
-   * Used by the file browser panel to pick files for adding to project.
-   */
   async function browseDirectory(path = '/') {
     browseLoading.value = true
     try {
@@ -131,8 +101,6 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  // --- Helpers ---
-
   function formatBytes(bytes) {
     if (bytes === 0) return '0 B'
     const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
@@ -141,15 +109,7 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   return {
-    // State
-    project,
-    totalSize,
-    modified,
     browseLoading,
-    // Getters
-    entryCount,
-    totalSizeFormatted,
-    // Actions
     newProject,
     openProject,
     saveProject,
@@ -158,7 +118,6 @@ export const useProjectStore = defineStore('project', () => {
     removeEntry,
     calculateSize,
     browseDirectory,
-    // Helpers
     formatBytes,
   }
 })

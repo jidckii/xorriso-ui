@@ -162,8 +162,8 @@ func ParseMediaBlocks(lines []string) (readable, writable, overall int64) {
 	return
 }
 
-// ParseMediaSummary parses "Media summary: 0 sessions, 0 data blocks, 0 data,  703m free"
-var mediaSummaryRe = regexp.MustCompile(`Media summary\s*:\s*(\d+)\s+sessions`)
+// ParseMediaSummary parses "Media summary: 1 session, ..." or "Media summary: 0 sessions, ..."
+var mediaSummaryRe = regexp.MustCompile(`Media summary\s*:\s*(\d+)\s+sessions?`)
 
 func ParseMediaSummary(lines []string) int {
 	for _, line := range lines {

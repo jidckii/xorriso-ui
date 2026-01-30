@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -70,8 +71,8 @@ func (s *DeviceService) ListDevices() ([]models.Device, error) {
 	return devices, nil
 }
 
-// discoverDrivesFromProc reads /proc/sys/dev/cdrom/info to get drive names,
-// then reads /sys/block/<name>/device/ for vendor and model info.
+// discoverDrivesFromProc reads /proc/sys/dev/cdrom/info to get drive names
+// and capabilities, then reads /sys/block/<name>/device/ for vendor and model.
 func discoverDrivesFromProc() ([]models.Device, error) {
 	f, err := os.Open("/proc/sys/dev/cdrom/info")
 	if err != nil {
@@ -80,20 +81,39 @@ func discoverDrivesFromProc() ([]models.Device, error) {
 	defer f.Close()
 
 	var driveNames []string
+	var canCloseTray []bool
+	var canLockTray []bool
+	var driveSpeeds []int
+
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "drive name:") {
 			parts := strings.Fields(line)
-			// "drive name:\tsr0 sr1 ..."
 			if len(parts) > 2 {
 				driveNames = append(driveNames, parts[2:]...)
+			}
+		} else if strings.HasPrefix(line, "drive speed:") {
+			parts := strings.Fields(line)
+			for _, p := range parts[2:] {
+				speed, _ := strconv.Atoi(p)
+				driveSpeeds = append(driveSpeeds, speed)
+			}
+		} else if strings.HasPrefix(line, "Can close tray:") {
+			parts := strings.Fields(line)
+			for _, p := range parts[3:] {
+				canCloseTray = append(canCloseTray, p == "1")
+			}
+		} else if strings.HasPrefix(line, "Can lock tray:") {
+			parts := strings.Fields(line)
+			for _, p := range parts[3:] {
+				canLockTray = append(canLockTray, p == "1")
 			}
 		}
 	}
 
 	var devices []models.Device
-	for _, name := range driveNames {
+	for i, name := range driveNames {
 		dev := models.Device{
 			Path:     fmt.Sprintf("/dev/%s", name),
 			LinkPath: resolveSymlink(fmt.Sprintf("/dev/%s", name)),
@@ -103,6 +123,16 @@ func discoverDrivesFromProc() ([]models.Device, error) {
 		dev.Vendor = readSysFile(filepath.Join(sysPath, "vendor"))
 		dev.Model = readSysFile(filepath.Join(sysPath, "model"))
 		dev.Revision = readSysFile(filepath.Join(sysPath, "rev"))
+
+		if i < len(canCloseTray) {
+			dev.CanCloseTray = canCloseTray[i]
+		}
+		if i < len(canLockTray) {
+			dev.CanLockTray = canLockTray[i]
+		}
+		if i < len(driveSpeeds) {
+			dev.DriveSpeed = driveSpeeds[i]
+		}
 
 		devices = append(devices, dev)
 	}
@@ -151,6 +181,7 @@ func (s *DeviceService) GetMediaInfo(devicePath string) (*models.MediaInfo, erro
 		"-dev", devicePath,
 		"-toc",
 		"-tell_media_space",
+		"-pvd_info",
 	)
 	if err != nil {
 		return nil, err
@@ -177,16 +208,32 @@ func (s *DeviceService) GetMediaInfo(devicePath string) (*models.MediaInfo, erro
 	// Parse used space
 	info.UsedSpace = info.TotalCapacity - info.FreeSpace
 
-	// Parse media type, status, erasable from result lines
+	// Parse all text fields from result lines
 	for _, line := range lines {
 		if strings.Contains(line, "Media current:") {
 			info.MediaType = extractAfterColon(line)
-		}
-		if strings.Contains(line, "Media status :") {
+		} else if strings.Contains(line, "Media status :") {
 			info.MediaStatus = extractAfterColon(line)
-		}
-		if strings.Contains(line, "Media erasable") {
+		} else if strings.Contains(line, "Media erasable") {
 			info.Erasable = strings.Contains(line, "is erasable")
+		} else if strings.Contains(line, "Media product:") {
+			info.MediaProduct = extractMediaProduct(line)
+		} else if strings.Contains(line, "Volume Id    :") {
+			info.VolumeID = extractAfterColon(line)
+		} else if strings.Contains(line, "Volume Set Id:") {
+			info.VolumeSetID = extractAfterColon(line)
+		} else if strings.Contains(line, "Publisher Id :") {
+			info.PublisherID = extractAfterColon(line)
+		} else if strings.Contains(line, "Preparer Id  :") {
+			info.PreparerID = extractAfterColon(line)
+		} else if strings.Contains(line, "App Id       :") {
+			info.AppID = extractAfterColon(line)
+		} else if strings.Contains(line, "System Id    :") {
+			info.SystemID = extractAfterColon(line)
+		} else if strings.Contains(line, "Creation Time:") {
+			info.CreationTime = extractAfterColon(line)
+		} else if strings.Contains(line, "Modif. Time  :") {
+			info.ModifyTime = extractAfterColon(line)
 		}
 	}
 
@@ -209,9 +256,20 @@ func (s *DeviceService) GetSpeeds(devicePath string) ([]models.SpeedDescriptor, 
 	return xorriso.ParseSpeeds(result.ResultLines), nil
 }
 
+// LoadTray closes the drive tray using eject -t.
+func (s *DeviceService) LoadTray(devicePath string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "eject", "-t", devicePath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("load tray failed: %s: %w", strings.TrimSpace(string(output)), err)
+	}
+	return nil
+}
+
 // EjectDisc ejects the disc from the drive using the system eject command.
-// Using eject(1) instead of xorriso because xorriso requires acquiring the
-// device first (which can fail when no recognizable media is present).
 func (s *DeviceService) EjectDisc(devicePath string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -249,4 +307,14 @@ func extractAfterColon(line string) string {
 		return ""
 	}
 	return strings.TrimSpace(line[idx+1:])
+}
+
+// extractMediaProduct parses "Media product: 97m26s66f/79m59s71f , CMC Magnetics Corporation"
+// Returns the manufacturer name (part after comma), or the full value if no comma.
+func extractMediaProduct(line string) string {
+	val := extractAfterColon(line)
+	if idx := strings.Index(val, ","); idx >= 0 {
+		return strings.TrimSpace(val[idx+1:])
+	}
+	return val
 }

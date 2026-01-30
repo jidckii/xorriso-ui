@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { ListDevices, GetMediaInfo, GetSpeeds, EjectDisc } from '../../bindings/xorriso-ui/services/deviceservice.js'
+import { ListDevices, GetMediaInfo, GetSpeeds, EjectDisc, LoadTray } from '../../bindings/xorriso-ui/services/deviceservice.js'
 import { Events } from '@wailsio/runtime'
 
 export const useDeviceStore = defineStore('device', () => {
@@ -89,6 +89,17 @@ export const useDeviceStore = defineStore('device', () => {
     }
   }
 
+  async function loadTray() {
+    if (!currentDevicePath.value) return
+    try {
+      await LoadTray(currentDevicePath.value)
+      // After tray closes, refresh media info
+      setTimeout(() => fetchMediaInfo(), 2000)
+    } catch (error) {
+      console.error('Failed to load tray:', error)
+    }
+  }
+
   /**
    * Initialize event listeners for device-related Wails events.
    * Call this once from the app root or on store creation.
@@ -131,6 +142,7 @@ export const useDeviceStore = defineStore('device', () => {
     fetchMediaInfo,
     fetchSpeeds,
     ejectDisc,
+    loadTray,
     init,
   }
 })
