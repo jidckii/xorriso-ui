@@ -524,10 +524,11 @@ func fillExifData(filePath string, props *FileProperties) {
 	}
 	if tag, err := x.Get(exif.ExposureTime); err == nil {
 		if num, den, err := tag.Rat2(0); err == nil && den != 0 {
-			if num == 1 {
-				props.ExposureTime = fmt.Sprintf("1/%d s", den)
+			val := float64(num) / float64(den)
+			if val < 1 {
+				// Show as fraction: 1/xxx s
+				props.ExposureTime = fmt.Sprintf("1/%d s", int(0.5+1.0/val))
 			} else {
-				val := float64(num) / float64(den)
 				props.ExposureTime = fmt.Sprintf("%.4g s", val)
 			}
 		}

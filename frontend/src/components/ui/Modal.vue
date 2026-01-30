@@ -46,13 +46,13 @@ function onBackdropClick(e) {
       >
         <div
           :class="[
-            'w-full mx-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700',
+            'w-full mx-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-xl border border-gray-300 dark:border-gray-700 flex flex-col max-h-[85vh]',
             sizeClass,
           ]"
         >
           <!-- Header -->
           <div
-            class="flex items-center justify-between px-4 py-3 border-b border-gray-300 dark:border-gray-700"
+            class="flex items-center justify-between px-4 py-3 border-b border-gray-300 dark:border-gray-700 shrink-0"
           >
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ title }}</h3>
             <button
@@ -76,14 +76,14 @@ function onBackdropClick(e) {
           </div>
 
           <!-- Body -->
-          <div class="px-4 py-4">
+          <div class="px-4 py-4 overflow-y-auto">
             <slot />
           </div>
 
           <!-- Footer -->
           <div
             v-if="$slots.footer"
-            class="px-4 py-3 border-t border-gray-300 dark:border-gray-700 flex justify-end gap-2"
+            class="px-4 py-3 border-t border-gray-300 dark:border-gray-700 flex justify-end gap-2 shrink-0"
           >
             <slot name="footer" />
           </div>
