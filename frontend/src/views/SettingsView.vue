@@ -1,16 +1,18 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
-// TODO: import Wails service bindings when available
-// import { GetSettings, SaveSettings } from '../../bindings/xorriso-ui/SettingsService'
+import { GetSettings, SaveSettings } from '../../bindings/xorriso-ui/services/settingsservice.js'
 
 const { t, locale } = useI18n()
+const router = useRouter()
 const themeStore = useThemeStore()
 
 // --- State ---
 const saving = ref(false)
 const saved = ref(false)
+const saveError = ref('')
 
 const settings = reactive({
   language: locale.value,
@@ -28,8 +30,9 @@ const settings = reactive({
     streamRecording: false,
   },
   defaultIsoOptions: {
-    rockRidge: true,
-    joliet: true,
+    udf: true,
+    rockRidge: false,
+    joliet: false,
     md5: true,
     backupMode: false,
   },
@@ -58,10 +61,21 @@ watch(() => settings.theme, (newTheme) => {
 // --- Actions ---
 async function loadSettings() {
   try {
-    // TODO: replace with actual Wails call
-    // const result = await GetSettings()
-    // Object.assign(settings, result)
-    console.log('Settings loaded (mock)')
+    const result = await GetSettings()
+    if (result) {
+      settings.xorrisoBinaryPath = result.xorrisoPath || '/usr/bin/xorriso'
+      settings.devicePollInterval = result.devicePollInterval || 5
+      settings.bdxlSafeMode = result.bdxlSafeMode || false
+      settings.language = result.language || 'en'
+      settings.theme = result.theme || 'dark'
+
+      if (result.defaultBurn) {
+        Object.assign(settings.defaultBurnOptions, result.defaultBurn)
+      }
+      if (result.defaultIso) {
+        Object.assign(settings.defaultIsoOptions, result.defaultIso)
+      }
+    }
   } catch (error) {
     console.error('Failed to load settings:', error)
   }
@@ -70,17 +84,31 @@ async function loadSettings() {
 async function saveSettings() {
   saving.value = true
   saved.value = false
+  saveError.value = ''
   try {
-    // TODO: replace with actual Wails call
-    // await SaveSettings({ ...settings })
-    console.log('Settings saved (mock):', JSON.parse(JSON.stringify(settings)))
+    await SaveSettings({
+      xorrisoPath: settings.xorrisoBinaryPath,
+      defaultBurn: { ...settings.defaultBurnOptions },
+      defaultIso: { ...settings.defaultIsoOptions },
+      bdxlSafeMode: settings.bdxlSafeMode,
+      autoEject: settings.defaultBurnOptions.eject,
+      devicePollInterval: settings.devicePollInterval,
+      language: settings.language,
+      theme: settings.theme,
+    })
     saved.value = true
     setTimeout(() => { saved.value = false }, 3000)
   } catch (error) {
     console.error('Failed to save settings:', error)
+    saveError.value = String(error)
+    setTimeout(() => { saveError.value = '' }, 5000)
   } finally {
     saving.value = false
   }
+}
+
+function goBack() {
+  router.push('/')
 }
 
 // Load on mount
@@ -91,9 +119,19 @@ loadSettings()
   <div class="h-full overflow-y-auto">
     <div class="max-w-2xl mx-auto p-6 space-y-8">
 
-      <div>
-        <h1 class="text-xl font-semibold">{{ t('settings.title') }}</h1>
-        <p class="text-sm text-gray-500 mt-1">{{ t('settings.subtitle') }}</p>
+      <div class="flex items-center gap-3">
+        <button
+          @click="goBack"
+          class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div>
+          <h1 class="text-xl font-semibold">{{ t('settings.title') }}</h1>
+          <p class="text-sm text-gray-500 mt-1">{{ t('settings.subtitle') }}</p>
+        </div>
       </div>
 
       <!-- Appearance -->
@@ -152,11 +190,15 @@ loadSettings()
         </div>
       </section>
 
-      <!-- Default ISO Options -->
+      <!-- Default Filesystem Options -->
       <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.defaultIsoOptions') }}</h2>
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.defaultFsOptions') }}</h2>
 
         <div class="space-y-2">
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+            <input type="checkbox" v-model="settings.defaultIsoOptions.udf" class="accent-blue-500" />
+            {{ t('settings.udf') }}
+          </label>
           <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultIsoOptions.rockRidge" class="accent-blue-500" />
             {{ t('settings.rockRidge') }}
@@ -256,6 +298,7 @@ loadSettings()
           {{ saving ? t('settings.saving') : t('settings.saveSettings') }}
         </button>
         <span v-if="saved" class="text-sm text-green-400">{{ t('settings.savedSuccessfully') }}</span>
+        <span v-if="saveError" class="text-sm text-red-400">{{ saveError }}</span>
       </div>
     </div>
   </div>

@@ -598,9 +598,9 @@
   resolved "https://registry.npmjs.org/@vue/shared/-/shared-3.5.27.tgz"
   integrity sha512-dXr/3CgqXsJkZ0n9F3I4elY8wM9jMJpP3pvRG52r6m0tu/MsAFIe6JpXVGeNMd/D9F4hQynWT8Rfuj0bdm9kFQ==
 
-"@wailsio/runtime@latest":
+"@wailsio/runtime@3.0.0-alpha.79":
   version "3.0.0-alpha.79"
-  resolved "https://registry.npmjs.org/@wailsio/runtime/-/runtime-3.0.0-alpha.79.tgz"
+  resolved "https://registry.yarnpkg.com/@wailsio/runtime/-/runtime-3.0.0-alpha.79.tgz#d43310f5b87dc46142756abf0973ba07277be66e"
   integrity sha512-NITzxKmJsMEruc39L166lbPJVECxzcbdqpHVqOOF7Cu/7Zqk/e3B/gNpkUjhNyo5rVb3V1wpS8oEgLUmpu1cwA==
 
 birpc@^2.3.0:

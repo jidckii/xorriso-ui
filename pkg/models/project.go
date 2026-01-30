@@ -23,6 +23,7 @@ type FileEntry struct {
 }
 
 type ISOOptions struct {
+	UDF          bool   `json:"udf"`
 	RockRidge    bool   `json:"rockRidge"`
 	Joliet       bool   `json:"joliet"`
 	HFSPlus      bool   `json:"hfsPlus"`

@@ -105,6 +105,27 @@ func ParseSpeeds(lines []string) []models.SpeedDescriptor {
 	return speeds
 }
 
+// ParseProfiles parses output of -list_profiles
+// Actual xorriso pkt_output format: "Profile      : 0x0043 (BD-RE)"
+// With current profile marked: "Profile      : 0x0041 (BD-R sequential recording) (current)"
+var profileLineRe = regexp.MustCompile(`Profile\s+:\s+0x([0-9A-Fa-f]+)\s+\(([^)]+)\)`)
+
+func ParseProfiles(lines []string) []models.MediaProfile {
+	var profiles []models.MediaProfile
+	for _, line := range lines {
+		matches := profileLineRe.FindStringSubmatch(line)
+		if matches == nil {
+			continue
+		}
+		current := strings.Contains(line, "(current)")
+		profiles = append(profiles, models.MediaProfile{
+			Name:    strings.TrimSpace(matches[2]),
+			Current: current,
+		})
+	}
+	return profiles
+}
+
 // ParseMediaSpace parses output of -tell_media_space
 // Line: "Media space  : NNNNN  (free blocks)"
 var mediaSpaceRe = regexp.MustCompile(`(\d+)s\s+\(`)

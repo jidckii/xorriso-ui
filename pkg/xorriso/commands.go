@@ -47,7 +47,13 @@ func (b *CommandBuilder) Joliet(on bool) *CommandBuilder {
 	}
 	return b.add("-joliet", "off")
 }
-func (b *CommandBuilder) MD5(mode string) *CommandBuilder  { return b.add("-md5", mode) }
+func (b *CommandBuilder) UDF(on bool) *CommandBuilder {
+	if on {
+		return b.add("-compliance", "udf")
+	}
+	return b
+}
+func (b *CommandBuilder) MD5(mode string) *CommandBuilder { return b.add("-md5", mode) }
 func (b *CommandBuilder) ForBackup() *CommandBuilder        { return b.add("-for_backup") }
 
 // File operations

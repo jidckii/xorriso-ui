@@ -1,7 +1,12 @@
 package services
 
 import (
+	"bufio"
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,7 +37,6 @@ func (s *DeviceService) ServiceName() string {
 
 // ServiceStartup is called by Wails when the app starts
 func (s *DeviceService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
-	// Start device polling in background
 	go s.pollDevices()
 	return nil
 }
@@ -43,23 +47,98 @@ func (s *DeviceService) ServiceShutdown() error {
 	return nil
 }
 
-// ListDevices returns all detected optical drives
+// ListDevices detects optical drives via /proc/sys/dev/cdrom/info and /sys/block/
 func (s *DeviceService) ListDevices() ([]models.Device, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := s.executor.Run(ctx, "-device_links")
+	devices, err := discoverDrivesFromProc()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to discover drives: %w", err)
 	}
 
-	devices := xorriso.ParseDevices(result.ResultLines)
+	// Enrich each device with supported profiles from xorriso
+	for i := range devices {
+		profiles, err := s.GetDriveProfiles(devices[i].Path)
+		if err == nil {
+			devices[i].Profiles = profiles
+		}
+	}
 
 	s.mu.Lock()
 	s.devices = devices
 	s.mu.Unlock()
 
 	return devices, nil
+}
+
+// discoverDrivesFromProc reads /proc/sys/dev/cdrom/info to get drive names,
+// then reads /sys/block/<name>/device/ for vendor and model info.
+func discoverDrivesFromProc() ([]models.Device, error) {
+	f, err := os.Open("/proc/sys/dev/cdrom/info")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var driveNames []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "drive name:") {
+			parts := strings.Fields(line)
+			// "drive name:\tsr0 sr1 ..."
+			if len(parts) > 2 {
+				driveNames = append(driveNames, parts[2:]...)
+			}
+		}
+	}
+
+	var devices []models.Device
+	for _, name := range driveNames {
+		dev := models.Device{
+			Path:     fmt.Sprintf("/dev/%s", name),
+			LinkPath: resolveSymlink(fmt.Sprintf("/dev/%s", name)),
+		}
+
+		sysPath := filepath.Join("/sys/block", name, "device")
+		dev.Vendor = readSysFile(filepath.Join(sysPath, "vendor"))
+		dev.Model = readSysFile(filepath.Join(sysPath, "model"))
+		dev.Revision = readSysFile(filepath.Join(sysPath, "rev"))
+
+		devices = append(devices, dev)
+	}
+
+	return devices, nil
+}
+
+func readSysFile(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
+
+func resolveSymlink(path string) string {
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return path
+	}
+	return resolved
+}
+
+// GetDriveProfiles returns all media profiles supported by the drive (via xorriso)
+func (s *DeviceService) GetDriveProfiles(devicePath string) ([]models.MediaProfile, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	result, err := s.executor.Run(ctx,
+		"-outdev", devicePath,
+		"-list_profiles", "all",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return xorriso.ParseProfiles(result.ResultLines), nil
 }
 
 // GetMediaInfo returns information about the media in the specified drive
@@ -86,14 +165,14 @@ func (s *DeviceService) GetMediaInfo(devicePath string) (*models.MediaInfo, erro
 
 	// Parse info lines for media type and status
 	for _, line := range result.InfoLines {
-		if contains(line, "Media current:") {
+		if strings.Contains(line, "Media current:") {
 			info.MediaType = extractAfterColon(line)
 		}
-		if contains(line, "Media status :") {
+		if strings.Contains(line, "Media status :") {
 			info.MediaStatus = extractAfterColon(line)
 		}
-		if contains(line, "Media erasable") {
-			info.Erasable = contains(line, "is erasable")
+		if strings.Contains(line, "Media erasable") {
+			info.Erasable = strings.Contains(line, "is erasable")
 		}
 	}
 
@@ -147,34 +226,10 @@ func (s *DeviceService) pollDevices() {
 	}
 }
 
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && containsStr(s, substr)
-}
-
-func containsStr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-
 func extractAfterColon(line string) string {
-	for i, c := range line {
-		if c == ':' && i+1 < len(line) {
-			result := line[i+1:]
-			// Trim spaces
-			start := 0
-			for start < len(result) && result[start] == ' ' {
-				start++
-			}
-			end := len(result)
-			for end > start && (result[end-1] == ' ' || result[end-1] == '\n') {
-				end--
-			}
-			return result[start:end]
-		}
+	idx := strings.Index(line, ":")
+	if idx < 0 || idx+1 >= len(line) {
+		return ""
 	}
-	return ""
+	return strings.TrimSpace(line[idx+1:])
 }

@@ -1,15 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-// TODO: import Wails service bindings when available
-// import { StartBurn, CancelBurn, BlankDisc } from '../../bindings/xorriso-ui/BurnService'
-// TODO: import Wails events when backend is ready
-// import { Events } from '@wailsio/runtime'
+import { StartBurn, CancelBurn, BlankDisc, FormatDisc, GetJobStatus } from '../../bindings/xorriso-ui/services/burnservice.js'
+import { Events } from '@wailsio/runtime'
 
 export const useBurnStore = defineStore('burn', () => {
   // --- State ---
   const currentJob = ref(null)
   const logLines = ref([])
-  const isBurning = computed(() => currentJob.value !== null && ['preparing', 'burning', 'verifying', 'blanking'].includes(currentJob.value.state))
+  const isBurning = computed(() => currentJob.value !== null && ['preparing', 'burning', 'verifying', 'blanking', 'formatting'].includes(currentJob.value.state))
 
   // Burn progress details
   const progress = computed(() => {
@@ -37,16 +35,13 @@ export const useBurnStore = defineStore('burn', () => {
 
   // --- Actions ---
 
-  async function startBurn(devicePath) {
+  async function startBurn(project, devicePath, opts) {
     logLines.value = []
     try {
-      // TODO: replace with actual Wails call
-      // const job = await StartBurn(project, devicePath, opts)
-      // currentJob.value = job
+      const jobId = await StartBurn(project, devicePath, opts)
 
-      // Mock: create a job and simulate progress
       currentJob.value = {
-        id: `burn-${Date.now()}`,
+        id: jobId,
         state: 'preparing',
         progress: {
           phase: 'preparing',
@@ -58,15 +53,15 @@ export const useBurnStore = defineStore('burn', () => {
           fifoFill: 0,
         },
         result: null,
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
       }
 
       addLogLine('Starting burn process...')
       addLogLine(`Target device: ${devicePath}`)
-
-      // Mock: simulate burn progress for UI development
-      simulateBurnProgress()
     } catch (error) {
       console.error('Failed to start burn:', error)
+      addLogLine(`ERROR: ${error.message || error}`)
       currentJob.value = null
     }
   }
@@ -74,23 +69,17 @@ export const useBurnStore = defineStore('burn', () => {
   async function cancelBurn() {
     if (!currentJob.value) return
     try {
-      // TODO: replace with actual Wails call
-      // await CancelBurn(currentJob.value.id)
-
-      addLogLine('Burn cancelled by user.')
-      currentJob.value.state = 'cancelled'
-      currentJob.value.result = { success: false, message: 'Cancelled by user' }
+      await CancelBurn(currentJob.value.id)
+      addLogLine('Burn cancellation requested.')
     } catch (error) {
       console.error('Failed to cancel burn:', error)
+      addLogLine(`ERROR: Failed to cancel: ${error.message || error}`)
     }
   }
 
   async function blankDisc(devicePath, mode = 'fast') {
     logLines.value = []
     try {
-      // TODO: replace with actual Wails call
-      // await BlankDisc(devicePath, mode)
-
       currentJob.value = {
         id: `blank-${Date.now()}`,
         state: 'blanking',
@@ -104,21 +93,67 @@ export const useBurnStore = defineStore('burn', () => {
           fifoFill: 0,
         },
         result: null,
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
       }
 
       addLogLine(`Blanking disc on ${devicePath} (mode: ${mode})...`)
-
-      // Mock simulation
-      setTimeout(() => {
-        if (currentJob.value && currentJob.value.state === 'blanking') {
-          currentJob.value.state = 'complete'
-          currentJob.value.progress.percent = 100
-          currentJob.value.result = { success: true, message: 'Disc blanked successfully' }
-          addLogLine('Blanking complete.')
-        }
-      }, 3000)
+      await BlankDisc(devicePath, mode)
     } catch (error) {
       console.error('Failed to blank disc:', error)
+      addLogLine(`ERROR: ${error.message || error}`)
+      if (currentJob.value) {
+        currentJob.value.state = 'error'
+        currentJob.value.result = { success: false }
+        currentJob.value.finishedAt = new Date().toISOString()
+      }
+    }
+  }
+
+  async function formatDisc(devicePath, mode = 'default') {
+    logLines.value = []
+    try {
+      currentJob.value = {
+        id: `format-${Date.now()}`,
+        state: 'formatting',
+        progress: {
+          phase: 'formatting',
+          percent: 0,
+          speed: '',
+          bytesWritten: 0,
+          bytesTotal: 0,
+          eta: '',
+          fifoFill: 0,
+        },
+        result: null,
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+      }
+
+      addLogLine(`Formatting disc on ${devicePath} (mode: ${mode})...`)
+      await FormatDisc(devicePath, mode)
+    } catch (error) {
+      console.error('Failed to format disc:', error)
+      addLogLine(`ERROR: ${error.message || error}`)
+      if (currentJob.value) {
+        currentJob.value.state = 'error'
+        currentJob.value.result = { success: false }
+        currentJob.value.finishedAt = new Date().toISOString()
+      }
+    }
+  }
+
+  async function fetchJobStatus() {
+    if (!currentJob.value) return null
+    try {
+      const job = await GetJobStatus(currentJob.value.id)
+      if (job) {
+        currentJob.value = job
+      }
+      return job
+    } catch (error) {
+      console.error('Failed to get job status:', error)
+      return null
     }
   }
 
@@ -137,72 +172,38 @@ export const useBurnStore = defineStore('burn', () => {
    * Call this once from the app root or on store creation.
    */
   function init() {
-    // TODO: replace with actual Wails event subscriptions
-    // Events.On('burn:progress', (data) => {
-    //   if (currentJob.value) {
-    //     currentJob.value.progress = data
-    //   }
-    // })
-    // Events.On('burn:state-changed', (data) => {
-    //   if (currentJob.value) {
-    //     currentJob.value.state = data.state
-    //   }
-    // })
-    // Events.On('burn:log-line', (data) => {
-    //   addLogLine(data.line)
-    // })
-    // Events.On('burn:complete', (data) => {
-    //   if (currentJob.value) {
-    //     currentJob.value.state = 'complete'
-    //     currentJob.value.result = data
-    //   }
-    // })
-    // Events.On('burn:error', (data) => {
-    //   if (currentJob.value) {
-    //     currentJob.value.state = 'error'
-    //     currentJob.value.result = { success: false, message: data.error }
-    //   }
-    //   addLogLine(`ERROR: ${data.error}`)
-    // })
-  }
-
-  // --- Mock helpers (remove when real backend is connected) ---
-
-  function simulateBurnProgress() {
-    let percent = 0
-    const total = 734003200 // ~700 MB
-    const interval = setInterval(() => {
-      if (!currentJob.value || currentJob.value.state === 'cancelled') {
-        clearInterval(interval)
-        return
+    Events.On('burn:progress', (data) => {
+      if (currentJob.value) {
+        currentJob.value.progress = data
       }
+    })
 
-      percent += 2
-      if (percent <= 100) {
-        const written = Math.floor((percent / 100) * total)
-        currentJob.value.state = percent < 5 ? 'preparing' : percent < 95 ? 'burning' : 'verifying'
-        currentJob.value.progress = {
-          phase: currentJob.value.state,
-          percent,
-          speed: '8x (36.0 MB/s)',
-          bytesWritten: written,
-          bytesTotal: total,
-          eta: `${Math.ceil((100 - percent) * 0.5)}s`,
-          fifoFill: Math.min(100, 80 + Math.random() * 20),
-        }
-
-        if (percent % 10 === 0) {
-          addLogLine(`Progress: ${percent}% — ${(written / 1024 / 1024).toFixed(1)} MB written`)
-        }
+    Events.On('burn:state-changed', (data) => {
+      if (currentJob.value) {
+        currentJob.value.state = data.state
       }
+    })
 
-      if (percent >= 100) {
-        clearInterval(interval)
+    Events.On('burn:log-line', (data) => {
+      addLogLine(data.line)
+    })
+
+    Events.On('burn:complete', (data) => {
+      if (currentJob.value) {
         currentJob.value.state = 'complete'
-        currentJob.value.result = { success: true, message: 'Burn completed successfully' }
-        addLogLine('Burn completed successfully.')
+        currentJob.value.result = data
+        currentJob.value.finishedAt = new Date().toISOString()
       }
-    }, 500)
+    })
+
+    Events.On('burn:error', (data) => {
+      if (currentJob.value) {
+        currentJob.value.state = 'error'
+        currentJob.value.result = { success: false }
+        currentJob.value.finishedAt = new Date().toISOString()
+      }
+      addLogLine(`ERROR: ${data.error}`)
+    })
   }
 
   return {
@@ -216,6 +217,8 @@ export const useBurnStore = defineStore('burn', () => {
     startBurn,
     cancelBurn,
     blankDisc,
+    formatDisc,
+    fetchJobStatus,
     resetJob,
     addLogLine,
     init,

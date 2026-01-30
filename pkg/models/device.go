@@ -1,12 +1,13 @@
 package models
 
 type Device struct {
-	Path        string `json:"path"`
-	LinkPath    string `json:"linkPath"`
-	Vendor      string `json:"vendor"`
-	Model       string `json:"model"`
-	Revision    string `json:"revision"`
-	MediaLoaded bool   `json:"mediaLoaded"`
+	Path        string         `json:"path"`
+	LinkPath    string         `json:"linkPath"`
+	Vendor      string         `json:"vendor"`
+	Model       string         `json:"model"`
+	Revision    string         `json:"revision"`
+	MediaLoaded bool           `json:"mediaLoaded"`
+	Profiles    []MediaProfile `json:"profiles"`
 }
 
 type MediaInfo struct {

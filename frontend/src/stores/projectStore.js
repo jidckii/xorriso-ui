@@ -1,19 +1,35 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed } from 'vue'
-// TODO: import Wails service bindings when available
-// import { NewProject, AddFiles, RemoveEntry, CalculateSize, BrowseDirectory } from '../../bindings/xorriso-ui/ProjectService'
+import {
+  NewProject,
+  OpenProject,
+  SaveProject,
+  SaveProjectAs,
+  BrowseDirectory,
+  AddFiles,
+  RemoveEntry,
+  CalculateSize,
+} from '../../bindings/xorriso-ui/services/projectservice.js'
 
 export const useProjectStore = defineStore('project', () => {
   // --- State ---
   const project = reactive({
     name: 'Untitled Project',
+    filePath: '',
     volumeId: 'UNTITLED',
     entries: [],
     isoOptions: {
-      rockRidge: true,
-      joliet: true,
+      udf: true,
+      rockRidge: false,
+      joliet: false,
+      hfsPlus: false,
+      zisofs: false,
       md5: true,
       backupMode: false,
+      bootImage: '',
+      bootCatalog: '',
+      efiBootImage: '',
+      bootMode: '',
     },
     burnOptions: {
       speed: 'auto',
@@ -23,7 +39,10 @@ export const useProjectStore = defineStore('project', () => {
       eject: true,
       burnMode: 'auto',
       streamRecording: false,
+      padding: '',
     },
+    createdAt: '',
+    updatedAt: '',
   })
 
   const totalSize = ref(0)
@@ -38,28 +57,27 @@ export const useProjectStore = defineStore('project', () => {
   // --- Actions ---
 
   async function newProject(name = 'Untitled Project', volumeId = 'UNTITLED') {
-    // TODO: replace with actual Wails call
-    // const result = await NewProject(name, volumeId)
-
-    project.name = name
-    project.volumeId = volumeId
-    project.entries = []
-    project.isoOptions = {
-      rockRidge: true,
-      joliet: true,
-      md5: true,
-      backupMode: false,
-    }
-    project.burnOptions = {
-      speed: 'auto',
-      dummyMode: false,
-      verify: true,
-      closeDisc: false,
-      eject: true,
-      burnMode: 'auto',
-      streamRecording: false,
-    }
+    const result = await NewProject(name, volumeId)
+    Object.assign(project, result)
     totalSize.value = 0
+    modified.value = false
+  }
+
+  async function openProject(filePath) {
+    const result = await OpenProject(filePath)
+    Object.assign(project, result)
+    modified.value = false
+    await calculateSize()
+  }
+
+  async function saveProject() {
+    await SaveProject({ ...project })
+    modified.value = false
+  }
+
+  async function saveProjectAs(filePath) {
+    await SaveProjectAs({ ...project }, filePath)
+    project.filePath = filePath
     modified.value = false
   }
 
@@ -67,22 +85,8 @@ export const useProjectStore = defineStore('project', () => {
     if (!sourcePaths || sourcePaths.length === 0) return
 
     try {
-      // TODO: replace with actual Wails call
-      // const result = await AddFiles(project, sourcePaths, destDir)
-      // project.entries = result.entries
-
-      // Mock: add entries to the project
-      for (const path of sourcePaths) {
-        const name = path.split('/').pop()
-        project.entries.push({
-          name,
-          sourcePath: path,
-          destPath: destDir === '/' ? `/${name}` : `${destDir}/${name}`,
-          isDir: false,
-          size: Math.floor(Math.random() * 1024 * 1024 * 100), // Mock random size
-        })
-      }
-
+      const result = await AddFiles({ ...project }, sourcePaths, destDir)
+      project.entries = result.entries
       modified.value = true
       await calculateSize()
     } catch (error) {
@@ -92,16 +96,10 @@ export const useProjectStore = defineStore('project', () => {
 
   async function removeEntry(destPath) {
     try {
-      // TODO: replace with actual Wails call
-      // const result = await RemoveEntry(project, destPath)
-      // project.entries = result.entries
-
-      const idx = project.entries.findIndex(e => e.destPath === destPath)
-      if (idx !== -1) {
-        project.entries.splice(idx, 1)
-        modified.value = true
-        await calculateSize()
-      }
+      const result = await RemoveEntry({ ...project }, destPath)
+      project.entries = result.entries
+      modified.value = true
+      await calculateSize()
     } catch (error) {
       console.error('Failed to remove entry:', error)
     }
@@ -109,12 +107,8 @@ export const useProjectStore = defineStore('project', () => {
 
   async function calculateSize() {
     try {
-      // TODO: replace with actual Wails call
-      // const result = await CalculateSize(project)
-      // totalSize.value = result
-
-      // Mock: sum up entry sizes
-      totalSize.value = project.entries.reduce((sum, e) => sum + (e.size || 0), 0)
+      const result = await CalculateSize({ ...project })
+      totalSize.value = result
     } catch (error) {
       console.error('Failed to calculate size:', error)
     }
@@ -127,21 +121,8 @@ export const useProjectStore = defineStore('project', () => {
   async function browseDirectory(path = '/') {
     browseLoading.value = true
     try {
-      // TODO: replace with actual Wails call
-      // const result = await BrowseDirectory(path)
-      // return result
-
-      // Mock data for UI development
-      return [
-        { name: '..', path: path === '/' ? '/' : path.split('/').slice(0, -1).join('/') || '/', isDir: true, size: 0 },
-        { name: 'Documents', path: `${path === '/' ? '' : path}/Documents`, isDir: true, size: 0 },
-        { name: 'Downloads', path: `${path === '/' ? '' : path}/Downloads`, isDir: true, size: 0 },
-        { name: 'Music', path: `${path === '/' ? '' : path}/Music`, isDir: true, size: 0 },
-        { name: 'Photos', path: `${path === '/' ? '' : path}/Photos`, isDir: true, size: 0 },
-        { name: 'readme.txt', path: `${path === '/' ? '' : path}/readme.txt`, isDir: false, size: 1234 },
-        { name: 'backup.tar.gz', path: `${path === '/' ? '' : path}/backup.tar.gz`, isDir: false, size: 52428800 },
-        { name: 'image.iso', path: `${path === '/' ? '' : path}/image.iso`, isDir: false, size: 734003200 },
-      ]
+      const result = await BrowseDirectory(path)
+      return result
     } catch (error) {
       console.error('Failed to browse directory:', error)
       return []
@@ -170,6 +151,9 @@ export const useProjectStore = defineStore('project', () => {
     totalSizeFormatted,
     // Actions
     newProject,
+    openProject,
+    saveProject,
+    saveProjectAs,
     addFiles,
     removeEntry,
     calculateSize,
