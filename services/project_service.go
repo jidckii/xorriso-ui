@@ -497,6 +497,244 @@ func getImageDimensions(path string, ext string) (int, int) {
 	return cfg.Width, cfg.Height
 }
 
+// fillExifData reads EXIF metadata from a JPEG/TIFF file and populates FileProperties
+func fillExifData(filePath string, props *FileProperties) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	x, err := exif.Decode(f)
+	if err != nil {
+		return
+	}
+
+	if tag, err := x.Get(exif.Model); err == nil {
+		props.CameraModel = strings.Trim(tag.String(), "\"")
+	}
+	if tag, err := x.Get(exif.Make); err == nil {
+		props.CameraMake = strings.Trim(tag.String(), "\"")
+	}
+	if tag, err := x.Get(exif.FNumber); err == nil {
+		if num, den, err := tag.Rat2(0); err == nil && den != 0 {
+			val := float64(num) / float64(den)
+			props.FNumber = fmt.Sprintf("f/%.1f", val)
+		}
+	}
+	if tag, err := x.Get(exif.ExposureTime); err == nil {
+		if num, den, err := tag.Rat2(0); err == nil && den != 0 {
+			if num == 1 {
+				props.ExposureTime = fmt.Sprintf("1/%d s", den)
+			} else {
+				val := float64(num) / float64(den)
+				props.ExposureTime = fmt.Sprintf("%.4g s", val)
+			}
+		}
+	}
+	if tag, err := x.Get(exif.ISOSpeedRatings); err == nil {
+		props.ISOSpeed = tag.String()
+	}
+	if tag, err := x.Get(exif.FocalLength); err == nil {
+		if num, den, err := tag.Rat2(0); err == nil && den != 0 {
+			val := float64(num) / float64(den)
+			props.FocalLength = fmt.Sprintf("%.4g mm", val)
+		}
+	}
+	if tag, err := x.Get(exif.FocalLengthIn35mmFilm); err == nil {
+		props.FocalLength35 = tag.String() + " mm"
+	}
+	if tag, err := x.Get(exif.Flash); err == nil {
+		props.Flash = decodeFlash(tag.String())
+	}
+	if tag, err := x.Get(exif.Software); err == nil {
+		props.Software = strings.Trim(tag.String(), "\"")
+	}
+	if tag, err := x.Get(exif.Orientation); err == nil {
+		props.Orientation = decodeOrientation(tag.String())
+	}
+	if t, err := x.DateTime(); err == nil {
+		props.DateTaken = t.Format(time.RFC3339)
+	}
+}
+
+// decodeFlash converts EXIF flash value to human-readable string
+func decodeFlash(val string) string {
+	val = strings.TrimSpace(val)
+	switch val {
+	case "0":
+		return "No flash"
+	case "1":
+		return "Flash fired"
+	case "5":
+		return "Flash fired, no strobe return"
+	case "7":
+		return "Flash fired, strobe return"
+	case "8":
+		return "No flash, compulsory"
+	case "9":
+		return "Flash fired, compulsory"
+	case "16":
+		return "No flash (off)"
+	case "24":
+		return "No flash, auto"
+	case "25":
+		return "Flash fired, auto"
+	default:
+		return val
+	}
+}
+
+// decodeOrientation converts EXIF orientation value to human-readable string
+func decodeOrientation(val string) string {
+	val = strings.TrimSpace(val)
+	switch val {
+	case "1":
+		return "Normal"
+	case "2":
+		return "Flipped horizontal"
+	case "3":
+		return "Rotated 180°"
+	case "4":
+		return "Flipped vertical"
+	case "5":
+		return "Transposed"
+	case "6":
+		return "Rotated 90° CW"
+	case "7":
+		return "Transverse"
+	case "8":
+		return "Rotated 90° CCW"
+	default:
+		return val
+	}
+}
+
+// ffprobeStream represents a stream from ffprobe JSON output
+type ffprobeStream struct {
+	CodecName    string `json:"codec_name"`
+	CodecType    string `json:"codec_type"`
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
+	RFrameRate   string `json:"r_frame_rate"`
+	BitRate      string `json:"bit_rate"`
+	SampleRate   string `json:"sample_rate"`
+	Channels     int    `json:"channels"`
+}
+
+type ffprobeFormat struct {
+	Duration string `json:"duration"`
+	BitRate  string `json:"bit_rate"`
+}
+
+type ffprobeOutput struct {
+	Streams []ffprobeStream `json:"streams"`
+	Format  ffprobeFormat   `json:"format"`
+}
+
+// fillMediaMetadata runs ffprobe to extract video/audio metadata
+func fillMediaMetadata(filePath string, props *FileProperties) {
+	out, err := exec.Command("ffprobe",
+		"-v", "quiet",
+		"-print_format", "json",
+		"-show_streams",
+		"-show_format",
+		filePath,
+	).Output()
+	if err != nil {
+		return
+	}
+
+	var probe ffprobeOutput
+	if err := json.Unmarshal(out, &probe); err != nil {
+		return
+	}
+
+	// Parse duration
+	if probe.Format.Duration != "" {
+		if secs := parseDurationSeconds(probe.Format.Duration); secs > 0 {
+			h := int(secs) / 3600
+			m := (int(secs) % 3600) / 60
+			s := int(secs) % 60
+			if h > 0 {
+				props.Duration = fmt.Sprintf("%d:%02d:%02d", h, m, s)
+			} else {
+				props.Duration = fmt.Sprintf("%d:%02d", m, s)
+			}
+		}
+	}
+
+	for _, stream := range probe.Streams {
+		switch stream.CodecType {
+		case "video":
+			if props.VideoCodec == "" {
+				props.VideoCodec = stream.CodecName
+				if stream.Width > 0 && stream.Height > 0 {
+					props.ImageWidth = stream.Width
+					props.ImageHeight = stream.Height
+				}
+				if stream.RFrameRate != "" {
+					props.FrameRate = parseFrameRate(stream.RFrameRate)
+				}
+				if stream.BitRate != "" {
+					props.VideoBitrate = formatBitrate(stream.BitRate)
+				}
+			}
+		case "audio":
+			if props.AudioCodec == "" {
+				props.AudioCodec = stream.CodecName
+				if stream.SampleRate != "" {
+					props.SampleRate = stream.SampleRate + " Hz"
+				}
+				if stream.Channels > 0 {
+					props.AudioChannels = fmt.Sprintf("%d", stream.Channels)
+				}
+				if stream.BitRate != "" {
+					props.AudioBitrate = formatBitrate(stream.BitRate)
+				}
+			}
+		}
+	}
+}
+
+// parseDurationSeconds parses a string like "123.456" to float64 seconds
+func parseDurationSeconds(s string) float64 {
+	var v float64
+	fmt.Sscanf(s, "%f", &v)
+	return v
+}
+
+// parseFrameRate converts "30000/1001" to "29.97 fps" or "25/1" to "25 fps"
+func parseFrameRate(s string) string {
+	parts := strings.Split(s, "/")
+	if len(parts) == 2 {
+		var num, den float64
+		fmt.Sscanf(parts[0], "%f", &num)
+		fmt.Sscanf(parts[1], "%f", &den)
+		if den > 0 {
+			fps := num / den
+			if fps == float64(int(fps)) {
+				return fmt.Sprintf("%d fps", int(fps))
+			}
+			return fmt.Sprintf("%.2f fps", fps)
+		}
+	}
+	return s + " fps"
+}
+
+// formatBitrate converts "1234567" (bps) to "1.23 Mbps" or "128000" to "128 kbps"
+func formatBitrate(s string) string {
+	var bps float64
+	fmt.Sscanf(s, "%f", &bps)
+	if bps <= 0 {
+		return s
+	}
+	if bps >= 1_000_000 {
+		return fmt.Sprintf("%.2f Mbps", bps/1_000_000)
+	}
+	return fmt.Sprintf("%.0f kbps", bps/1000)
+}
+
 func dirSize(path string) (int64, error) {
 	var size int64
 	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
