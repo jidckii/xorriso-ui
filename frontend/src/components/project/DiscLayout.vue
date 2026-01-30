@@ -1,158 +1,196 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import FileTree from './FileTree.vue'
-import Button from '../ui/Button.vue'
+import { useRouter } from 'vue-router'
+import { TreeRoot, TreeItem } from 'reka-ui'
+import { ChevronRight } from 'lucide-vue-next'
+import FileIcon from '../ui/FileIcon.vue'
+import { useProjectStore } from '../../stores/projectStore'
+import { useTabStore } from '../../stores/tabStore'
 
 const { t } = useI18n()
+const router = useRouter()
+const projectStore = useProjectStore()
+const tabStore = useTabStore()
 
-const props = defineProps({
-  entries: {
-    type: Array,
-    default: () => [],
-    // Each entry: { name, path, isDir, size, children? }
-  },
+const currentProject = computed(() => tabStore.activeProject)
+const tabId = computed(() => tabStore.activeTabId)
+
+// Build tree from flat entries
+const treeItems = computed(() => {
+  const entries = currentProject.value?.entries || []
+  if (entries.length === 0) return []
+  return buildTreeFromEntries(entries)
 })
 
-const emit = defineEmits(['remove', 'update:entries'])
+function buildTreeFromEntries(entries) {
+  const root = { children: [] }
 
-const dragOver = ref(false)
+  for (const entry of entries) {
+    const parts = entry.destPath.split('/').filter(Boolean)
+    let current = root
 
-const isEmpty = computed(() => props.entries.length === 0)
+    for (let i = 0; i < parts.length; i++) {
+      const name = parts[i]
+      let child = current.children.find(c => c.name === name)
 
-const totalSize = computed(() => {
-  function sumSize(items) {
-    return items.reduce((acc, item) => {
-      let s = item.size || 0
-      if (item.children) s += sumSize(item.children)
-      return acc + s
-    }, 0)
+      if (!child) {
+        const isLeaf = i === parts.length - 1
+        child = {
+          _key: '/' + parts.slice(0, i + 1).join('/'),
+          destPath: '/' + parts.slice(0, i + 1).join('/'),
+          sourcePath: isLeaf ? entry.sourcePath : '',
+          name,
+          isDir: isLeaf ? entry.isDir : true,
+          size: isLeaf ? entry.size : 0,
+          children: [],
+        }
+        current.children.push(child)
+      }
+      current = child
+    }
   }
-  return sumSize(props.entries)
-})
 
-function formatSize(bytes) {
-  if (!bytes) return '0 B'
-  if (bytes < 1024) return bytes + ' B'
-  const units = ['KB', 'MB', 'GB']
-  let i = -1
-  let size = bytes
-  do {
-    size /= 1024
-    i++
-  } while (size >= 1024 && i < units.length - 1)
-  return size.toFixed(1) + ' ' + units[i]
+  return root.children
 }
 
-function removeEntry(entry) {
-  emit('remove', entry)
+const expanded = ref([])
+const selected = ref([])
+
+function onSelectionChange(val) {
+  if (!currentProject.value) return
+  const items = Array.isArray(val) ? val : [val]
+  selected.value = items
+  currentProject.value.selectedProjectEntries = items.map(i => i.destPath || i._key)
 }
 
-function onDragOver(e) {
-  e.preventDefault()
-  dragOver.value = true
+async function removeSelectedFromProject() {
+  if (!currentProject.value) return
+  for (const destPath of currentProject.value.selectedProjectEntries) {
+    await projectStore.removeEntry(tabId.value, destPath)
+  }
+  currentProject.value.selectedProjectEntries = []
+  selected.value = []
 }
 
-function onDragLeave() {
-  dragOver.value = false
+function goToBurn() {
+  router.push('/burn')
 }
 
-function onDrop(e) {
-  e.preventDefault()
-  dragOver.value = false
-  // Handle drop - in real app, parse dragged data
+function formatBytes(bytes) {
+  return projectStore.formatBytes(bytes)
 }
 
-function onSelect(entry) {
-  // Could highlight the entry
+function getKey(item) {
+  return item._key || item.destPath
+}
+
+function getChildren(item) {
+  if (!item.children || item.children.length === 0) return undefined
+  return item.children
 }
 </script>
 
 <template>
-  <div
-    class="flex flex-col h-full bg-white dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-700"
-    :class="{ 'border-blue-500 border-2': dragOver }"
-    @dragover="onDragOver"
-    @dragleave="onDragLeave"
-    @drop="onDrop"
-  >
+  <div class="flex flex-col h-full">
     <!-- Header -->
-    <div class="flex items-center justify-between px-3 py-2 border-b border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 rounded-t-lg">
-      <div class="flex items-center gap-2">
-        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" stroke-width="1.5" />
-          <circle cx="12" cy="12" r="3" stroke-width="1.5" />
-        </svg>
-        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ t('project.discLayout') }}</span>
-      </div>
-      <span class="text-xs text-gray-600 dark:text-gray-400">
-        {{ entries.length }} {{ t('project.items') }}, {{ formatSize(totalSize) }}
+    <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
+      <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke-width="1.5" />
+        <circle cx="12" cy="12" r="3" stroke-width="1.5" />
+      </svg>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('project.discLayout') }}</span>
+      <span class="ml-auto text-xs text-gray-500">
+        {{ currentProject?.entries?.length || 0 }} {{ t('project.items') }} — {{ formatBytes(currentProject?.totalSize || 0) }}
       </span>
     </div>
 
-    <!-- Content -->
+    <!-- Tree content -->
     <div class="flex-1 overflow-y-auto">
       <!-- Empty state -->
       <div
-        v-if="isEmpty"
+        v-if="!currentProject?.entries?.length"
         class="flex flex-col items-center justify-center h-full text-gray-500 py-12"
       >
-        <svg class="w-16 h-16 mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" stroke-width="1" />
-          <circle cx="12" cy="12" r="3" stroke-width="1" />
-          <circle cx="12" cy="12" r="6" stroke-width="0.5" />
+        <svg class="w-12 h-12 mb-3 text-gray-200 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p class="text-sm mb-1">{{ t('project.noFilesAdded') }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-600">{{ t('project.dragFilesHere') }}</p>
+        <p class="text-sm">{{ t('common.addFilesFromBrowser') }}</p>
       </div>
 
-      <!-- File tree with remove buttons -->
-      <div v-else class="py-1">
-        <div
-          v-for="entry in entries"
-          :key="entry.path"
-          class="group flex items-center gap-1 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <!-- Icon -->
-          <svg
-            v-if="entry.isDir"
-            class="w-4 h-4 text-yellow-500 flex-shrink-0"
-            fill="currentColor"
-            viewBox="0 0 20 20"
+      <!-- File tree -->
+      <TreeRoot
+        v-else
+        :items="treeItems"
+        :get-key="getKey"
+        :get-children="getChildren"
+        v-model:expanded="expanded"
+        :model-value="selected"
+        multiple
+        selection-behavior="toggle"
+        class="w-full text-sm"
+        @update:model-value="onSelectionChange"
+      >
+        <template #default="{ flattenItems }">
+          <TreeItem
+            v-for="item in flattenItems"
+            :key="item._id"
+            v-bind="item.bind"
+            class="flex items-center gap-1.5 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors outline-none data-[selected]:bg-blue-900/20"
+            :style="{ paddingLeft: (item.level * 16 + 8) + 'px', paddingRight: '8px' }"
           >
-            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-          </svg>
-          <svg
-            v-else
-            class="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
+            <template #default="{ isExpanded, isSelected }">
+              <!-- Expand chevron -->
+              <span class="w-4 h-4 flex items-center justify-center shrink-0">
+                <ChevronRight
+                  v-if="item.value.children?.length"
+                  :size="14"
+                  class="text-gray-500 transition-transform duration-150"
+                  :class="{ 'rotate-90': isExpanded }"
+                />
+              </span>
 
-          <!-- Name -->
-          <span class="text-sm text-gray-800 dark:text-gray-200 truncate flex-1">{{ entry.name }}</span>
+              <!-- File/folder icon -->
+              <FileIcon
+                :name="item.value.name"
+                :is-dir="item.value.isDir"
+                :is-open="isExpanded"
+                :size="16"
+              />
 
-          <!-- Size -->
-          <span class="text-xs text-gray-500 flex-shrink-0">
-            {{ formatSize(entry.size) }}
-          </span>
+              <!-- Name -->
+              <span class="truncate flex-1 text-gray-800 dark:text-gray-200">
+                {{ item.value.name }}
+              </span>
 
-          <!-- Remove button -->
-          <button
-            class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all flex-shrink-0 ml-1"
-            :title="t('project.remove')"
-            @click="removeEntry(entry)"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
+              <!-- Size -->
+              <span v-if="!item.value.isDir && item.value.size" class="text-xs text-gray-500 shrink-0 ml-2">
+                {{ formatBytes(item.value.size) }}
+              </span>
+            </template>
+          </TreeItem>
+        </template>
+      </TreeRoot>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
+      <button
+        @click="removeSelectedFromProject"
+        :disabled="!currentProject || currentProject.selectedProjectEntries.length === 0"
+        class="px-3 py-1 text-xs font-medium rounded bg-red-600 hover:bg-red-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      >
+        {{ t('project.remove') }}
+      </button>
+      <span class="flex-1"></span>
+      <button
+        @click="goToBurn"
+        :disabled="!currentProject || currentProject.entries.length === 0"
+        class="px-4 py-1 text-xs font-medium rounded bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      >
+        {{ t('burn.title') }}
+      </button>
     </div>
   </div>
 </template>

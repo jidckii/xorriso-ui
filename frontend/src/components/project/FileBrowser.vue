@@ -1,179 +1,262 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '../ui/Button.vue'
+import { TreeRoot, TreeItem, TreeVirtualizer } from 'reka-ui'
+import { ChevronRight, ArrowUp, Home } from 'lucide-vue-next'
+import FileIcon from '../ui/FileIcon.vue'
+import { useProjectStore } from '../../stores/projectStore'
+import { useTabStore } from '../../stores/tabStore'
 
 const { t } = useI18n()
+const projectStore = useProjectStore()
+const tabStore = useTabStore()
 
-const emit = defineEmits(['add-files'])
+const currentProject = computed(() => tabStore.activeProject)
+const tabId = computed(() => tabStore.activeTabId)
 
-// Mock file system data (will be replaced by Wails backend calls)
-const currentPath = ref('/home')
-const entries = ref([
-  { name: 'Documents', path: '/home/Documents', isDir: true, size: 0 },
-  { name: 'Downloads', path: '/home/Downloads', isDir: true, size: 0 },
-  { name: 'Music', path: '/home/Music', isDir: true, size: 0 },
-  { name: 'Pictures', path: '/home/Pictures', isDir: true, size: 0 },
-  { name: 'readme.txt', path: '/home/readme.txt', isDir: false, size: 4096 },
-  { name: 'backup.tar.gz', path: '/home/backup.tar.gz', isDir: false, size: 52428800 },
-])
+// Tree data: enriched browse entries with lazy-loaded children
+const treeItems = ref([])
+const expanded = ref([])
+const selected = ref([])
 
-const selectedEntries = ref(new Set())
-const pathHistory = ref(['/home'])
-
+// Breadcrumb segments
 const breadcrumbs = computed(() => {
-  const parts = currentPath.value.split('/').filter(Boolean)
+  const path = currentProject.value?.browsePath || '/'
+  if (path === '/') return []
+  const parts = path.split('/').filter(Boolean)
   return parts.map((part, i) => ({
     name: part,
     path: '/' + parts.slice(0, i + 1).join('/'),
   }))
 })
 
-function navigateTo(path) {
-  currentPath.value = path
-  selectedEntries.value.clear()
-  // In real app: call Wails backend to list directory
-  // e.g. entries.value = await ListDirectory(path)
+// Load root directory
+async function loadDirectory(path) {
+  const entries = await projectStore.browseDirectory(path)
+  treeItems.value = entries.map(e => ({
+    ...e,
+    _key: e.sourcePath,
+    children: e.isDir ? undefined : undefined,
+    _loaded: false,
+  }))
+  expanded.value = []
+  selected.value = []
+}
+
+// Navigate to a path (update browsePath, reload tree)
+async function navigateTo(path) {
+  if (!currentProject.value) return
+  currentProject.value.browsePath = path
+  currentProject.value.selectedBrowseFiles = []
+  await loadDirectory(path)
 }
 
 function goUp() {
-  const parts = currentPath.value.split('/').filter(Boolean)
-  if (parts.length > 1) {
-    parts.pop()
-    navigateTo('/' + parts.join('/'))
-  } else {
-    navigateTo('/')
+  const path = currentProject.value?.browsePath || '/'
+  if (path === '/') return
+  const parts = path.split('/').filter(Boolean)
+  parts.pop()
+  navigateTo(parts.length === 0 ? '/' : '/' + parts.join('/'))
+}
+
+function goHome() {
+  navigateTo('/')
+}
+
+// Lazy-load children when expanding a directory
+async function onExpandedChange(newExpanded) {
+  const addedKeys = newExpanded.filter(k => !expanded.value.includes(k))
+  expanded.value = newExpanded
+
+  for (const key of addedKeys) {
+    const node = findNode(treeItems.value, key)
+    if (node && node.isDir && !node._loaded) {
+      const entries = await projectStore.browseDirectory(node.sourcePath)
+      node.children = entries.map(e => ({
+        ...e,
+        _key: e.sourcePath,
+        children: e.isDir ? undefined : undefined,
+        _loaded: false,
+      }))
+      node._loaded = true
+    }
   }
 }
 
-function onEntryClick(entry) {
-  if (entry.isDir) {
-    return
+function findNode(items, key) {
+  for (const item of items) {
+    if (item._key === key) return item
+    if (item.children) {
+      const found = findNode(item.children, key)
+      if (found) return found
+    }
   }
-  if (selectedEntries.value.has(entry.path)) {
-    selectedEntries.value.delete(entry.path)
-  } else {
-    selectedEntries.value.add(entry.path)
+  return null
+}
+
+// Selection
+function onSelectionChange(val) {
+  if (!currentProject.value) return
+  const items = Array.isArray(val) ? val : [val]
+  selected.value = items
+  currentProject.value.selectedBrowseFiles = items.map(i => i.sourcePath || i._key)
+}
+
+// Double-click directory → navigate into it
+function onItemDblClick(item) {
+  if (item.isDir) {
+    navigateTo(item.sourcePath)
   }
 }
 
-function onEntryDblClick(entry) {
-  if (entry.isDir) {
-    navigateTo(entry.path)
-  } else {
-    addSelected([entry])
+// Add selected files to project
+async function addSelectedToProject() {
+  if (!currentProject.value) return
+  const paths = currentProject.value.selectedBrowseFiles
+  if (paths.length > 0) {
+    await projectStore.addFiles(tabId.value, paths)
+    currentProject.value.selectedBrowseFiles = []
+    selected.value = []
   }
 }
 
-function addSelected(entriesToAdd) {
-  const items = entriesToAdd || entries.value.filter((e) => selectedEntries.value.has(e.path))
-  if (items.length > 0) {
-    emit('add-files', items)
-    selectedEntries.value.clear()
-  }
+function formatBytes(bytes) {
+  return projectStore.formatBytes(bytes)
 }
 
-function formatSize(bytes) {
-  if (!bytes) return ''
-  if (bytes < 1024) return bytes + ' B'
-  const units = ['KB', 'MB', 'GB']
-  let i = -1
-  let size = bytes
-  do {
-    size /= 1024
-    i++
-  } while (size >= 1024 && i < units.length - 1)
-  return size.toFixed(1) + ' ' + units[i]
+function getKey(item) {
+  return item._key || item.sourcePath
 }
+
+function getChildren(item) {
+  if (!item.isDir) return undefined
+  return item.children
+}
+
+// Init: load initial browse entries
+onMounted(async () => {
+  if (currentProject.value) {
+    await loadDirectory(currentProject.value.browsePath || '/')
+  }
+})
+
+// Watch for tab changes
+watch(tabId, async () => {
+  if (currentProject.value) {
+    await loadDirectory(currentProject.value.browsePath || '/')
+  }
+})
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-white dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-700">
-    <!-- Header -->
-    <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 rounded-t-lg">
-      <Button variant="ghost" size="sm" @click="goUp">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-        </svg>
-      </Button>
+  <div class="flex flex-col h-full">
+    <!-- Header: breadcrumb navigation -->
+    <div class="flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700">
+      <button
+        @click="goHome"
+        class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
+        :title="'Home'"
+      >
+        <Home :size="14" class="text-gray-600 dark:text-gray-400" />
+      </button>
+      <button
+        @click="goUp"
+        class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
+        :title="'Up'"
+      >
+        <ArrowUp :size="14" class="text-gray-600 dark:text-gray-400" />
+      </button>
 
-      <!-- Breadcrumb -->
-      <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 overflow-hidden flex-1">
+      <div class="flex items-center gap-0.5 text-xs text-gray-600 dark:text-gray-400 overflow-hidden flex-1 ml-1">
         <span
-          class="cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors flex-shrink-0"
+          class="cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors shrink-0"
           @click="navigateTo('/')"
         >/</span>
         <template v-for="(crumb, idx) in breadcrumbs" :key="crumb.path">
           <span
             class="cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors truncate"
-            :class="{ 'text-gray-800 dark:text-gray-200': idx === breadcrumbs.length - 1 }"
+            :class="{ 'text-gray-800 dark:text-gray-200 font-medium': idx === breadcrumbs.length - 1 }"
             @click="navigateTo(crumb.path)"
-          >
-            {{ crumb.name }}
-          </span>
-          <span v-if="idx < breadcrumbs.length - 1" class="text-gray-500 dark:text-gray-600 flex-shrink-0">/</span>
+          >{{ crumb.name }}</span>
+          <span v-if="idx < breadcrumbs.length - 1" class="text-gray-400 dark:text-gray-600 shrink-0">/</span>
         </template>
       </div>
-
-      <Button
-        variant="primary"
-        size="sm"
-        :disabled="selectedEntries.size === 0"
-        @click="addSelected()"
-      >
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        {{ t('common.add') }}
-      </Button>
     </div>
 
-    <!-- File list -->
+    <!-- Tree content -->
     <div class="flex-1 overflow-y-auto">
-      <div
-        v-for="entry in entries"
-        :key="entry.path"
-        class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        :class="{
-          'bg-blue-900/30': selectedEntries.has(entry.path),
-        }"
-        @click="onEntryClick(entry)"
-        @dblclick="onEntryDblClick(entry)"
-      >
-        <!-- Icon -->
-        <svg
-          v-if="entry.isDir"
-          class="w-5 h-5 text-yellow-500 flex-shrink-0"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-        </svg>
-        <svg
-          v-else
-          class="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-
-        <!-- Name -->
-        <span class="text-sm text-gray-800 dark:text-gray-200 truncate flex-1">
-          {{ entry.name }}
-        </span>
-
-        <!-- Size -->
-        <span v-if="!entry.isDir" class="text-xs text-gray-500 flex-shrink-0">
-          {{ formatSize(entry.size) }}
-        </span>
-      </div>
-
-      <div v-if="entries.length === 0" class="text-center text-gray-500 text-sm py-8">
+      <div v-if="treeItems.length === 0" class="text-center text-gray-500 text-sm py-8">
         {{ t('project.emptyDirectory') }}
       </div>
+
+      <TreeRoot
+        v-else
+        :items="treeItems"
+        :get-key="getKey"
+        :get-children="getChildren"
+        :expanded="expanded"
+        :model-value="selected"
+        multiple
+        selection-behavior="toggle"
+        class="w-full text-sm"
+        @update:expanded="onExpandedChange"
+        @update:model-value="onSelectionChange"
+      >
+        <template #default="{ flattenItems }">
+          <TreeItem
+            v-for="item in flattenItems"
+            :key="item._id"
+            v-bind="item.bind"
+            class="flex items-center gap-1.5 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors outline-none data-[selected]:bg-blue-900/20"
+            :style="{ paddingLeft: (item.level * 16 + 8) + 'px', paddingRight: '8px' }"
+            @dblclick="onItemDblClick(item.value)"
+          >
+            <template #default="{ isExpanded, isSelected }">
+              <!-- Expand chevron -->
+              <span class="w-4 h-4 flex items-center justify-center shrink-0">
+                <ChevronRight
+                  v-if="item.value.isDir"
+                  :size="14"
+                  class="text-gray-500 transition-transform duration-150"
+                  :class="{ 'rotate-90': isExpanded }"
+                />
+              </span>
+
+              <!-- File/folder icon -->
+              <FileIcon
+                :name="item.value.name"
+                :is-dir="item.value.isDir"
+                :is-open="isExpanded"
+                :size="16"
+              />
+
+              <!-- Name -->
+              <span class="truncate flex-1 text-gray-800 dark:text-gray-200">
+                {{ item.value.name }}
+              </span>
+
+              <!-- Size -->
+              <span v-if="!item.value.isDir" class="text-xs text-gray-500 shrink-0 ml-2">
+                {{ formatBytes(item.value.size) }}
+              </span>
+            </template>
+          </TreeItem>
+        </template>
+      </TreeRoot>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
+      <button
+        @click="addSelectedToProject"
+        :disabled="!currentProject || currentProject.selectedBrowseFiles.length === 0"
+        class="px-3 py-1 text-xs font-medium rounded bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      >
+        {{ t('project.addToProject') }}
+      </button>
+      <span class="text-xs text-gray-500">
+        {{ currentProject?.selectedBrowseFiles?.length || 0 }} {{ t('project.selected') }}
+      </span>
     </div>
   </div>
 </template>

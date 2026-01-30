@@ -42,6 +42,9 @@ function createProjectData(name = 'Untitled Project', volumeId = 'UNTITLED') {
     selectedProjectEntries: [],
     totalSize: 0,
     modified: false,
+    // Tree state
+    browseTreeExpanded: [],
+    discTreeExpanded: [],
   }
 }
 
