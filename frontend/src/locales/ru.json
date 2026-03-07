@@ -53,9 +53,17 @@
     "fastBlank": "Быстрая очистка",
     "fullBlank": "Полная очистка",
     "deformat": "Деформатировать",
+    "createIso": "Создать ISO",
+    "createIsoTitle": "Сохранить ISO-образ",
+    "verificationPassed": "Проверка пройдена",
+    "verificationFailed": "Проверка не пройдена: {count} ошибок",
+    "md5Match": "совпадает",
+    "md5Mismatch": "не совпадает",
     "burnCompleteMessage": "Диск успешно записан и проверен.",
     "burnFailedMessage": "Произошла ошибка при записи. Проверьте журнал для подробностей.",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "multisession": "Оставить диск открытым для дозаписи",
+    "multisessionHint": "Диск не будет финализирован, что позволит записывать дополнительные сессии позже."
   },
   "burnOptions": {
     "writeSpeed": "Скорость записи",
@@ -104,7 +112,12 @@
     "devicePollIntervalHelp": "Как часто проверять изменения устройств и носителей",
     "defaultFsOptions": "Параметры файловой системы по умолчанию",
     "defaultIsoOptions": "Параметры ISO по умолчанию",
-    "udf": "Файловая система UDF (современная, рекомендуется для DVD/BD)",
+    "isoLevel": "ISO Level",
+    "isoLevel1": "совместимость со старыми системами",
+    "isoLevel3": "файлы >4ГБ (рекомендуется для BD/BDXL)",
+    "isoLevelHelp": "Level 1: совместимость со старыми системами. Level 3: поддержка больших файлов, рекомендуется для BD/BDXL.",
+    "xorrisoNotFound": "не найден",
+    "xorrisoVersion": "версия xorriso",
     "rockRidge": "Расширения Rock Ridge (атрибуты файлов Linux/Unix)",
     "joliet": "Расширения Joliet (длинные имена файлов Windows)",
     "md5": "Записывать контрольные суммы MD5",
@@ -115,6 +128,8 @@
     "bluray": "Blu-ray / BDXL",
     "bdxlSafeMode": "Безопасный режим BDXL",
     "bdxlSafeModeDescription": "Автоматически включает контрольные суммы MD5, проверку после записи и потоковую запись для BD носителей. Рекомендуется для больших или архивных записей.",
+    "bdxlSafeModeDetails": "При включении автоматически включает MD5, верификацию и stream recording для максимальной надёжности записи BDXL дисков.",
+    "forced": "Принудительно",
     "saveSettings": "Сохранить настройки",
     "saving": "Сохранение...",
     "savedSuccessfully": "Настройки успешно сохранены.",
@@ -193,6 +208,7 @@
     "burning": "Запись данных...",
     "writing": "Запись данных...",
     "verifying": "Проверка...",
+    "creating_iso": "Создание ISO-образа...",
     "blanking": "Очистка диска...",
     "complete": "Завершено",
     "error": "Ошибка",
@@ -258,5 +274,13 @@
     "bdDl": "BD-DL 50ГБ",
     "bdxl100": "BDXL 100ГБ",
     "bdxl128": "BDXL 128ГБ"
+  },
+  "discInfo": {
+    "sessions": "Сессии",
+    "sessionNumber": "Сессия #",
+    "startLba": "Начальный LBA",
+    "sessionSize": "Размер",
+    "sessionVolumeId": "ID тома",
+    "noSessions": "Нет сессий на диске"
   }
 }

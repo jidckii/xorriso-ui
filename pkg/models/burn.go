@@ -11,7 +11,8 @@ const (
 	BurnStateVerifying BurnState = "verifying"
 	BurnStateDone      BurnState = "done"
 	BurnStateError     BurnState = "error"
-	BurnStateCancelled BurnState = "cancelled"
+	BurnStateCancelled   BurnState = "cancelled"
+	BurnStateCreatingISO BurnState = "creating_iso"
 )
 
 type BurnJob struct {

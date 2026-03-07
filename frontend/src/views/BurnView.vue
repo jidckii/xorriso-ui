@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { Dialogs } from '@wailsio/runtime'
 import { useDeviceStore } from '../stores/deviceStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useBurnStore } from '../stores/burnStore'
@@ -45,6 +46,7 @@ const phaseLabel = computed(() => {
     burning: t('phases.burning'),
     verifying: t('phases.verifying'),
     blanking: t('phases.blanking'),
+    creating_iso: t('phases.creating_iso'),
     complete: t('phases.complete'),
     error: t('phases.error'),
     cancelled: t('phases.cancelled'),
@@ -83,6 +85,29 @@ function goBack() {
 function burnAgain() {
   burnStore.resetJob()
   step.value = 'configure'
+}
+
+async function createISO() {
+  try {
+    const outputPath = await Dialogs.SaveFile({
+      title: t('burn.createIsoTitle'),
+      filters: [{ displayName: 'ISO Image', pattern: '*.iso' }],
+    })
+    if (!outputPath) return
+
+    step.value = 'burning'
+    await burnStore.createISO(burnProject.value, outputPath)
+
+    // Ожидаем завершения
+    const checkDone = setInterval(() => {
+      if (!burnStore.isBurning && burnStore.currentJob) {
+        step.value = 'done'
+        clearInterval(checkDone)
+      }
+    }, 500)
+  } catch (error) {
+    console.error('Failed to create ISO:', error)
+  }
 }
 
 function formatBytes(bytes) {
@@ -196,7 +221,14 @@ function formatBytes(bytes) {
               <input type="checkbox" v-model="burnProject.burnOptions.streamRecording" class="accent-blue-500" />
               {{ t('burn.streamRecording') }}
             </label>
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input type="checkbox" v-model="burnProject.burnOptions.multisession" class="accent-blue-500" />
+              {{ t('burn.multisession') }}
+            </label>
           </div>
+          <p v-if="burnProject.burnOptions.multisession" class="text-xs text-yellow-500 mt-1">
+            {{ t('burn.multisessionHint') }}
+          </p>
         </div>
 
         <!-- Blank disc section -->
@@ -228,6 +260,13 @@ function formatBytes(bytes) {
             class="px-4 py-2 text-sm font-medium rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             {{ t('burn.cancel') }}
+          </button>
+          <button
+            @click="createISO"
+            :disabled="!burnProject?.entries?.length || burnStore.isBurning"
+            class="px-5 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {{ t('burn.createIso') }}
           </button>
           <button
             @click="startBurn"
@@ -329,6 +368,21 @@ function formatBytes(bytes) {
           </template>
 
           <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">{{ burnStore.currentJob?.result?.message }}</p>
+
+          <!-- Результаты верификации -->
+          <div v-if="burnStore.currentJob?.result?.success" class="mt-4 space-y-1">
+            <div v-if="burnStore.currentJob.result.verifyErrors === 0" class="text-sm font-medium text-green-400">
+              {{ t('burn.verificationPassed') }}
+            </div>
+            <div v-else-if="burnStore.currentJob.result.verifyErrors > 0" class="text-sm font-medium text-red-400">
+              {{ t('burn.verificationFailed', { count: burnStore.currentJob.result.verifyErrors }) }}
+            </div>
+            <div v-if="burnStore.currentJob.result.md5Match !== undefined" class="text-xs text-gray-500">
+              MD5: <span :class="burnStore.currentJob.result.md5Match ? 'text-green-400' : 'text-red-400'">
+                {{ burnStore.currentJob.result.md5Match ? t('burn.md5Match') : t('burn.md5Mismatch') }}
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- Log -->

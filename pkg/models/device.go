@@ -19,6 +19,7 @@ type MediaInfo struct {
 	MediaStatus   string            `json:"mediaStatus"`
 	MediaProduct  string            `json:"mediaProduct"`
 	Sessions      int               `json:"sessions"`
+	SessionList   []Session         `json:"sessionList"`
 	FreeSpace     int64             `json:"freeSpace"`
 	UsedSpace     int64             `json:"usedSpace"`
 	TotalCapacity int64             `json:"totalCapacity"`

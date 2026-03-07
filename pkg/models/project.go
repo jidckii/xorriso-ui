@@ -23,17 +23,13 @@ type FileEntry struct {
 }
 
 type ISOOptions struct {
-	UDF          bool   `json:"udf"`
-	RockRidge    bool   `json:"rockRidge"`
-	Joliet       bool   `json:"joliet"`
-	HFSPlus      bool   `json:"hfsPlus"`
-	Zisofs       bool   `json:"zisofs"`
-	MD5          bool   `json:"md5"`
-	BackupMode   bool   `json:"backupMode"`
-	BootImage    string `json:"bootImage,omitempty"`
-	BootCatalog  string `json:"bootCatalog,omitempty"`
-	EFIBootImage string `json:"efiBootImage,omitempty"`
-	BootMode     string `json:"bootMode,omitempty"`
+	ISOLevel   int  `json:"isoLevel"`
+	RockRidge  bool `json:"rockRidge"`
+	Joliet     bool `json:"joliet"`
+	HFSPlus    bool `json:"hfsPlus"`
+	Zisofs     bool `json:"zisofs"`
+	MD5        bool `json:"md5"`
+	BackupMode bool `json:"backupMode"`
 }
 
 type BurnOptions struct {
@@ -45,4 +41,5 @@ type BurnOptions struct {
 	Eject           bool   `json:"eject"`
 	BurnMode        string `json:"burnMode"`
 	Padding         int    `json:"padding"`
+	Multisession    bool   `json:"multisession"`
 }

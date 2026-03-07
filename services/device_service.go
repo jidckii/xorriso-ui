@@ -205,6 +205,9 @@ func (s *DeviceService) GetMediaInfo(devicePath string) (*models.MediaInfo, erro
 	// Parse sessions count
 	info.Sessions = xorriso.ParseMediaSummary(lines)
 
+	// Parse session list from TOC
+	info.SessionList = xorriso.ParseTOCSessions(lines)
+
 	// Parse used space
 	info.UsedSpace = info.TotalCapacity - info.FreeSpace
 

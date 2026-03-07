@@ -1,5 +1,7 @@
 package xorriso
 
+import "strconv"
+
 // CommandBuilder constructs safe xorriso command-line arguments
 type CommandBuilder struct {
 	args []string
@@ -47,13 +49,23 @@ func (b *CommandBuilder) Joliet(on bool) *CommandBuilder {
 	}
 	return b.add("-joliet", "off")
 }
-func (b *CommandBuilder) UDF(on bool) *CommandBuilder {
+func (b *CommandBuilder) ISOLevel(level int) *CommandBuilder {
+	return b.add("-iso_level", strconv.Itoa(level))
+}
+func (b *CommandBuilder) MD5(mode string) *CommandBuilder { return b.add("-md5", mode) }
+func (b *CommandBuilder) CheckMD5(mode string) *CommandBuilder { return b.add("-check_md5", mode) }
+func (b *CommandBuilder) HFSPlus(on bool) *CommandBuilder {
 	if on {
-		return b.add("-compliance", "udf")
+		return b.add("-hfsplus", "on")
+	}
+	return b.add("-hfsplus", "off")
+}
+func (b *CommandBuilder) Zisofs(on bool) *CommandBuilder {
+	if on {
+		return b.add("-zisofs", "by_magic")
 	}
 	return b
 }
-func (b *CommandBuilder) MD5(mode string) *CommandBuilder { return b.add("-md5", mode) }
 func (b *CommandBuilder) ForBackup() *CommandBuilder        { return b.add("-for_backup") }
 
 // File operations
@@ -68,6 +80,15 @@ func (b *CommandBuilder) Add(paths ...string) *CommandBuilder {
 }
 
 // Write operations
+func (b *CommandBuilder) WriteType(mode string) *CommandBuilder {
+	return b.add("-write_type", mode)
+}
+func (b *CommandBuilder) Padding(kib int) *CommandBuilder {
+	return b.add("-padding", strconv.Itoa(kib)+"k")
+}
+func (b *CommandBuilder) StdioOutDevice(path string) *CommandBuilder {
+	return b.add("-outdev", "stdio:"+path)
+}
 func (b *CommandBuilder) WriteSpeed(speed string) *CommandBuilder {
 	return b.add("-speed", speed)
 }

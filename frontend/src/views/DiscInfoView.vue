@@ -183,6 +183,34 @@ function formatBytes(bytes) {
           </div>
         </div>
 
+        <!-- Sessions -->
+        <div v-if="deviceStore.mediaInfo?.sessionList?.length"
+          class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">{{ t('discInfo.sessions') }}</h3>
+          <table class="w-full text-sm text-gray-700 dark:text-gray-300">
+            <thead>
+              <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                <th class="text-left py-1.5 pr-3">#</th>
+                <th class="text-left py-1.5 pr-3">{{ t('discInfo.startLba') }}</th>
+                <th class="text-left py-1.5 pr-3">{{ t('discInfo.sessionSize') }}</th>
+                <th class="text-left py-1.5">{{ t('discInfo.sessionVolumeId') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="session in deviceStore.mediaInfo.sessionList"
+                :key="session.number"
+                class="border-b border-gray-100 dark:border-gray-700/50 last:border-0"
+              >
+                <td class="py-1.5 pr-3 font-mono text-xs">{{ session.number }}</td>
+                <td class="py-1.5 pr-3 font-mono text-xs">{{ session.startLba }}</td>
+                <td class="py-1.5 pr-3">{{ formatBytes(session.size) }}</td>
+                <td class="py-1.5">{{ session.volumeId || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <!-- Supported Profiles -->
         <div v-if="deviceStore.currentDevice?.profiles?.length"
           class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">

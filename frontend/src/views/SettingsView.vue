@@ -1,9 +1,9 @@
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
-import { GetSettings, SaveSettings } from '../../bindings/xorriso-ui/services/settingsservice.js'
+import { GetSettings, SaveSettings, GetXorrisoVersion } from '../../bindings/xorriso-ui/services/settingsservice.js'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -13,6 +13,8 @@ const themeStore = useThemeStore()
 const saving = ref(false)
 const saved = ref(false)
 const saveError = ref('')
+const xorrisoVersion = ref('')
+const xorrisoVersionError = ref(false)
 
 const settings = reactive({
   language: locale.value,
@@ -30,7 +32,7 @@ const settings = reactive({
     streamRecording: false,
   },
   defaultIsoOptions: {
-    udf: true,
+    isoLevel: 3,
     rockRidge: false,
     joliet: false,
     md5: true,
@@ -111,8 +113,26 @@ function goBack() {
   router.push('/')
 }
 
+async function loadXorrisoVersion() {
+  try {
+    const version = await GetXorrisoVersion()
+    if (version) {
+      xorrisoVersion.value = version
+      xorrisoVersionError.value = false
+    } else {
+      xorrisoVersion.value = ''
+      xorrisoVersionError.value = true
+    }
+  } catch (error) {
+    console.error('Failed to get xorriso version:', error)
+    xorrisoVersion.value = ''
+    xorrisoVersionError.value = true
+  }
+}
+
 // Load on mount
 loadSettings()
+loadXorrisoVersion()
 </script>
 
 <template>
@@ -168,12 +188,26 @@ loadSettings()
 
         <div>
           <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.xorrisoBinaryPath') }}</label>
-          <input
-            v-model="settings.xorrisoBinaryPath"
-            type="text"
-            placeholder="/usr/bin/xorriso"
-            class="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-blue-500"
-          />
+          <div class="flex items-center gap-3">
+            <input
+              v-model="settings.xorrisoBinaryPath"
+              type="text"
+              placeholder="/usr/bin/xorriso"
+              class="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-blue-500"
+            />
+            <span
+              v-if="xorrisoVersion && !xorrisoVersionError"
+              class="text-sm font-medium text-green-500 whitespace-nowrap"
+            >
+              {{ xorrisoVersion }}
+            </span>
+            <span
+              v-else-if="xorrisoVersionError"
+              class="text-sm font-medium text-red-500 whitespace-nowrap"
+            >
+              {{ t('settings.xorrisoNotFound') }}
+            </span>
+          </div>
           <p class="text-xs text-gray-500 dark:text-gray-600 mt-1">{{ t('settings.xorrisoBinaryPathHelp') }}</p>
         </div>
 
@@ -194,11 +228,21 @@ loadSettings()
       <section class="space-y-3">
         <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.defaultFsOptions') }}</h2>
 
-        <div class="space-y-2">
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultIsoOptions.udf" class="accent-blue-500" />
-            {{ t('settings.udf') }}
-          </label>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.isoLevel') }}</label>
+            <select
+              v-model.number="settings.defaultIsoOptions.isoLevel"
+              class="w-48 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
+            >
+              <option :value="1">Level 1 — {{ t('settings.isoLevel1') }}</option>
+              <option :value="2">Level 2</option>
+              <option :value="3">Level 3 — {{ t('settings.isoLevel3') }}</option>
+              <option :value="4">Level 4</option>
+            </select>
+            <p class="text-xs text-gray-500 dark:text-gray-600 mt-1">{{ t('settings.isoLevelHelp') }}</p>
+          </div>
+
           <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultIsoOptions.rockRidge" class="accent-blue-500" />
             {{ t('settings.rockRidge') }}
@@ -207,9 +251,10 @@ loadSettings()
             <input type="checkbox" v-model="settings.defaultIsoOptions.joliet" class="accent-blue-500" />
             {{ t('settings.joliet') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultIsoOptions.md5" class="accent-blue-500" />
+          <label class="flex items-center gap-3 text-sm" :class="settings.bdxlSafeMode ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
+            <input type="checkbox" v-model="settings.defaultIsoOptions.md5" :disabled="settings.bdxlSafeMode" class="accent-blue-500" />
             {{ t('settings.md5') }}
+            <span v-if="settings.bdxlSafeMode" class="text-xs px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-medium">BDXL</span>
           </label>
           <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultIsoOptions.backupMode" class="accent-blue-500" />
@@ -252,9 +297,10 @@ loadSettings()
         </div>
 
         <div class="space-y-2 mt-2">
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultBurnOptions.verify" class="accent-blue-500" />
+          <label class="flex items-center gap-3 text-sm" :class="settings.bdxlSafeMode ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
+            <input type="checkbox" v-model="settings.defaultBurnOptions.verify" :disabled="settings.bdxlSafeMode" class="accent-blue-500" />
             {{ t('burn.verifyAfterBurn') }}
+            <span v-if="settings.bdxlSafeMode" class="text-xs px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-medium">BDXL</span>
           </label>
           <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultBurnOptions.eject" class="accent-blue-500" />
@@ -268,9 +314,10 @@ loadSettings()
             <input type="checkbox" v-model="settings.defaultBurnOptions.closeDisc" class="accent-blue-500" />
             {{ t('burn.closeDisc') }}
           </label>
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultBurnOptions.streamRecording" class="accent-blue-500" />
+          <label class="flex items-center gap-3 text-sm" :class="settings.bdxlSafeMode ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
+            <input type="checkbox" v-model="settings.defaultBurnOptions.streamRecording" :disabled="settings.bdxlSafeMode" class="accent-blue-500" />
             {{ t('burn.streamRecording') }}
+            <span v-if="settings.bdxlSafeMode" class="text-xs px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-medium">BDXL</span>
           </label>
         </div>
       </section>
@@ -284,8 +331,25 @@ loadSettings()
           <div>
             <span class="font-medium">{{ t('settings.bdxlSafeMode') }}</span>
             <p class="text-xs text-gray-500 mt-0.5">{{ t('settings.bdxlSafeModeDescription') }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">{{ t('settings.bdxlSafeModeDetails') }}</p>
           </div>
         </label>
+
+        <!-- Индикаторы форсированных опций при BDXL Safe Mode -->
+        <div v-if="settings.bdxlSafeMode" class="ml-6 mt-2 space-y-1.5">
+          <div class="flex items-center gap-2 text-xs text-cyan-400">
+            <span class="inline-block px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 font-medium">{{ t('settings.forced') }}</span>
+            <span>{{ t('settings.md5') }}</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-cyan-400">
+            <span class="inline-block px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 font-medium">{{ t('settings.forced') }}</span>
+            <span>{{ t('burn.verifyAfterBurn') }}</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-cyan-400">
+            <span class="inline-block px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 font-medium">{{ t('settings.forced') }}</span>
+            <span>{{ t('burn.streamRecording') }}</span>
+          </div>
+        </div>
       </section>
 
       <!-- Save -->

@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { StartBurn, CancelBurn, BlankDisc, FormatDisc, GetJobStatus } from '../../bindings/xorriso-ui/services/burnservice.js'
+import { StartBurn, CancelBurn, BlankDisc, FormatDisc, GetJobStatus, CreateISO as CreateISOBinding } from '../../bindings/xorriso-ui/services/burnservice.js'
 import { Events } from '@wailsio/runtime'
 
 export const useBurnStore = defineStore('burn', () => {
   // --- State ---
   const currentJob = ref(null)
   const logLines = ref([])
-  const isBurning = computed(() => currentJob.value !== null && ['preparing', 'burning', 'verifying', 'blanking', 'formatting'].includes(currentJob.value.state))
+  const isBurning = computed(() => currentJob.value !== null && ['preparing', 'burning', 'verifying', 'blanking', 'formatting', 'creating_iso'].includes(currentJob.value.state))
+  const isCreatingIso = computed(() => currentJob.value !== null && currentJob.value.state === 'creating_iso')
 
   // Burn progress details
   const progress = computed(() => {
@@ -143,6 +144,39 @@ export const useBurnStore = defineStore('burn', () => {
     }
   }
 
+  async function createISO(project, outputPath) {
+    logLines.value = []
+    try {
+      currentJob.value = {
+        id: `iso-${Date.now()}`,
+        state: 'creating_iso',
+        progress: {
+          phase: 'creating_iso',
+          percent: 0,
+          speed: '',
+          bytesWritten: 0,
+          bytesTotal: 0,
+          eta: '',
+          fifoFill: 0,
+        },
+        result: null,
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+      }
+
+      addLogLine(`Creating ISO image: ${outputPath}`)
+      await CreateISOBinding(project, outputPath)
+    } catch (error) {
+      console.error('Failed to create ISO:', error)
+      addLogLine(`ERROR: ${error.message || error}`)
+      if (currentJob.value) {
+        currentJob.value.state = 'error'
+        currentJob.value.result = { success: false, message: String(error.message || error) }
+        currentJob.value.finishedAt = new Date().toISOString()
+      }
+    }
+  }
+
   async function fetchJobStatus() {
     if (!currentJob.value) return null
     try {
@@ -212,9 +246,11 @@ export const useBurnStore = defineStore('burn', () => {
     logLines,
     // Getters
     isBurning,
+    isCreatingIso,
     progress,
     // Actions
     startBurn,
+    createISO,
     cancelBurn,
     blankDisc,
     formatDisc,

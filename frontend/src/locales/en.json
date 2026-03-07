@@ -53,9 +53,17 @@
     "fastBlank": "Fast blank",
     "fullBlank": "Full blank",
     "deformat": "Deformat",
+    "createIso": "Create ISO",
+    "createIsoTitle": "Save ISO image",
+    "verificationPassed": "Verification passed",
+    "verificationFailed": "Verification failed: {count} errors",
+    "md5Match": "match",
+    "md5Mismatch": "mismatch",
     "burnCompleteMessage": "The disc was burned and verified successfully.",
     "burnFailedMessage": "An error occurred during the burn process. Check the log for details.",
-    "close": "Close"
+    "close": "Close",
+    "multisession": "Keep disc open for more sessions",
+    "multisessionHint": "The disc will not be finalized, allowing additional sessions to be written later."
   },
   "burnOptions": {
     "writeSpeed": "Write Speed",
@@ -104,7 +112,12 @@
     "devicePollIntervalHelp": "How often to check for device and media changes",
     "defaultFsOptions": "Default Filesystem Options",
     "defaultIsoOptions": "Default ISO Options",
-    "udf": "UDF filesystem (modern, recommended for DVD/BD)",
+    "isoLevel": "ISO Level",
+    "isoLevel1": "legacy compatibility",
+    "isoLevel3": "files >4GB (recommended for BD/BDXL)",
+    "isoLevelHelp": "Level 1: legacy systems. Level 3: large file support, recommended for BD/BDXL.",
+    "xorrisoNotFound": "not found",
+    "xorrisoVersion": "xorriso version",
     "rockRidge": "Rock Ridge extensions (Linux/Unix file attributes)",
     "joliet": "Joliet extensions (Windows long filenames)",
     "md5": "Record MD5 checksums",
@@ -115,6 +128,8 @@
     "bluray": "Blu-ray / BDXL",
     "bdxlSafeMode": "BDXL safe mode",
     "bdxlSafeModeDescription": "Automatically enables MD5 checksums, verify after burn, and stream recording for BD media. Recommended for large or archival burns.",
+    "bdxlSafeModeDetails": "When enabled, MD5, verification and stream recording are forced on for maximum BDXL burn reliability.",
+    "forced": "Forced",
     "saveSettings": "Save Settings",
     "saving": "Saving...",
     "savedSuccessfully": "Settings saved successfully.",
@@ -193,6 +208,7 @@
     "burning": "Writing data...",
     "writing": "Writing data...",
     "verifying": "Verifying...",
+    "creating_iso": "Creating ISO image...",
     "blanking": "Blanking disc...",
     "complete": "Complete",
     "error": "Error",
@@ -258,5 +274,13 @@
     "bdDl": "BD-DL 50GB",
     "bdxl100": "BDXL 100GB",
     "bdxl128": "BDXL 128GB"
+  },
+  "discInfo": {
+    "sessions": "Sessions",
+    "sessionNumber": "Session #",
+    "startLba": "Start LBA",
+    "sessionSize": "Size",
+    "sessionVolumeId": "Volume ID",
+    "noSessions": "No sessions on disc"
   }
 }

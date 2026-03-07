@@ -69,8 +69,9 @@ func (s *SettingsService) GetSettings() (*AppSettings, error) {
 			Padding:  300,
 		},
 		DefaultISO: models.ISOOptions{
-			UDF: true,
-			MD5: true,
+			ISOLevel:  3,
+			RockRidge: true,
+			MD5:       true,
 		},
 		BDXLSafeMode:       true,
 		AutoEject:          true,

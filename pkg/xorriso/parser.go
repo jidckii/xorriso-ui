@@ -162,6 +162,53 @@ func ParseMediaBlocks(lines []string) (readable, writable, overall int64) {
 	return
 }
 
+// checkMediaQualityRe парсит строки вида "quality scan: ... sectors, ... readable, ... unreadable"
+var checkMediaReadableRe = regexp.MustCompile(`(\d+)\s+readable`)
+var checkMediaUnreadableRe = regexp.MustCompile(`(\d+)\s+unreadable`)
+var checkMediaMD5Re = regexp.MustCompile(`MD5 mismatches\s*:\s*(\d+)`)
+
+// ParseCheckMediaResult парсит результат команды -check_media и возвращает
+// количество ошибок чтения и несовпадений MD5
+func ParseCheckMediaResult(lines []string) (readErrors int, md5Mismatches int) {
+	for _, line := range lines {
+		if m := checkMediaUnreadableRe.FindStringSubmatch(line); m != nil {
+			n, _ := strconv.Atoi(m[1])
+			readErrors += n
+		}
+		if m := checkMediaMD5Re.FindStringSubmatch(line); m != nil {
+			n, _ := strconv.Atoi(m[1])
+			md5Mismatches += n
+		}
+	}
+	return
+}
+
+// ParseTOCSessions парсит строки TOC-вывода xorriso (-toc) и извлекает список сессий.
+// Формат строки: "ISO session  :   1 ,         0 ,    150000s , MY_DISC"
+var tocSessionRe = regexp.MustCompile(`ISO session\s*:\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)s\s*,\s*(.*)`)
+
+func ParseTOCSessions(lines []string) []models.Session {
+	var sessions []models.Session
+	for _, line := range lines {
+		matches := tocSessionRe.FindStringSubmatch(line)
+		if matches == nil {
+			continue
+		}
+		number, _ := strconv.Atoi(matches[1])
+		startLBA, _ := strconv.ParseInt(matches[2], 10, 64)
+		size, _ := strconv.ParseInt(matches[3], 10, 64)
+		volumeID := strings.TrimSpace(matches[4])
+
+		sessions = append(sessions, models.Session{
+			Number:   number,
+			StartLBA: startLBA,
+			Size:     size,
+			VolumeID: volumeID,
+		})
+	}
+	return sessions
+}
+
 // ParseMediaSummary parses "Media summary: 1 session, ..." or "Media summary: 0 sessions, ..."
 var mediaSummaryRe = regexp.MustCompile(`Media summary\s*:\s*(\d+)\s+sessions?`)
 

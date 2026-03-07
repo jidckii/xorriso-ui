@@ -39,6 +39,7 @@ func (s *ProjectService) NewProject(name string, volumeID string) *models.Projec
 		VolumeID: volumeID,
 		Entries:  []models.FileEntry{},
 		ISOOptions: models.ISOOptions{
+			ISOLevel:  3,
 			RockRidge: true,
 			Joliet:    true,
 			MD5:       true,
