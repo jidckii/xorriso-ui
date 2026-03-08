@@ -36,9 +36,12 @@ function formatBytes(bytes) {
     <!-- Top Panels: File Browser + Disc Layout -->
     <div class="flex-1 flex min-h-0">
       <!-- Left Panel: File Browser -->
-      <div class="w-1/2 border-r border-gray-300 dark:border-gray-700">
+      <div class="w-1/2">
         <FileBrowser />
       </div>
+
+      <!-- Divider -->
+      <div class="w-px bg-gray-300 dark:bg-gray-700 shrink-0"></div>
 
       <!-- Right Panel: Disc Layout -->
       <div class="w-1/2">
