@@ -11,11 +11,18 @@ import (
 
 func (s *BurnService) runBurn(ctx context.Context, project *models.Project, devicePath string, opts models.BurnOptions, jobID string) {
 	startTime := time.Now()
+
+	if len(project.Entries) == 0 {
+		s.finishJob(jobID, models.BurnStateError, nil, "project has no entries")
+		return
+	}
+
 	s.updateState(jobID, models.BurnStateWriting)
 
 	// Формируем команду xorriso
 	cmd := xorriso.NewCommand()
 	cmd.Device(devicePath)
+	cmd.AbortOn("FAILURE")
 
 	s.buildISOCommand(cmd, project)
 
@@ -89,9 +96,10 @@ func (s *BurnService) runBurn(ctx context.Context, project *models.Project, devi
 
 		verifyCmd := xorriso.NewCommand()
 		verifyCmd.InDevice(devicePath)
+		verifyCmd.AbortOn("FAILURE")
 		if project.ISOOptions.MD5 {
 			verifyCmd.MD5("on")
-			verifyCmd.CheckMD5("FAILURE")
+			verifyCmd.CheckMD5Recursive("FAILURE", "/")
 		}
 		verifyCmd.CheckMedia(nil)
 
@@ -163,10 +171,17 @@ func (s *BurnService) runBurn(ctx context.Context, project *models.Project, devi
 
 func (s *BurnService) runCreateISO(ctx context.Context, project *models.Project, outputPath string, jobID string) {
 	startTime := time.Now()
+
+	if len(project.Entries) == 0 {
+		s.finishJob(jobID, models.BurnStateError, nil, "project has no entries")
+		return
+	}
+
 	s.updateState(jobID, models.BurnStateCreatingISO)
 
 	cmd := xorriso.NewCommand()
 	cmd.StdioOutDevice(outputPath)
+	cmd.AbortOn("FAILURE")
 
 	s.buildISOCommand(cmd, project)
 

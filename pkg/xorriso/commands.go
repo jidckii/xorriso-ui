@@ -60,6 +60,9 @@ func (b *CommandBuilder) ISOLevel(level int) *CommandBuilder {
 }
 func (b *CommandBuilder) MD5(mode string) *CommandBuilder      { return b.add("-md5", mode) }
 func (b *CommandBuilder) CheckMD5(mode string) *CommandBuilder { return b.add("-check_md5", mode) }
+func (b *CommandBuilder) CheckMD5Recursive(severity, isoPath string) *CommandBuilder {
+	return b.add("-check_md5_r", severity, isoPath, "--")
+}
 func (b *CommandBuilder) HFSPlus(on bool) *CommandBuilder {
 	if on {
 		return b.add("-hfsplus", "on")

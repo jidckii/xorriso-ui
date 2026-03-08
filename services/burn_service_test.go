@@ -200,9 +200,9 @@ func TestBuildISOCommand_Minimal(t *testing.T) {
 	if !containsSequence(args, "-rockridge", "off") {
 		t.Error("expected -rockridge off")
 	}
-	// Должно быть -joliet off
-	if !containsSequence(args, "-joliet", "off") {
-		t.Error("expected -joliet off")
+	// Joliet=false — не должно быть -joliet вообще (xorriso default — off)
+	if containsArg(args, "-joliet") {
+		t.Error("should not have -joliet when Joliet is false (xorriso default is off)")
 	}
 }
 
@@ -245,8 +245,9 @@ func TestBuildISOCommand_UDFOff(t *testing.T) {
 	svc.buildISOCommand(cmd, project)
 	args := cmd.Build()
 
-	if !containsSequence(args, "-udf", "off") {
-		t.Errorf("expected -udf off in args, got: %s", joinArgs(args))
+	// UDF=false — не должно быть -udf вообще (xorriso default — off)
+	if containsArg(args, "-udf") {
+		t.Errorf("should not have -udf when UDF is false (xorriso default is off), got: %s", joinArgs(args))
 	}
 }
 
@@ -357,12 +358,24 @@ func TestGetBurnCommand_Multisession(t *testing.T) {
 		},
 	}
 
+	// CloseDisc + Multisession — взаимоисключающие опции, должна быть ошибка
 	opts := models.BurnOptions{
 		Multisession: true,
-		CloseDisc:    true, // должно быть проигнорировано в пользу multisession
+		CloseDisc:    true,
 	}
 
-	result, err := svc.GetBurnCommand(project, "/dev/sr0", opts)
+	_, err := svc.GetBurnCommand(project, "/dev/sr0", opts)
+	if err == nil {
+		t.Fatal("expected error for mutually exclusive closeDisc and multisession")
+	}
+
+	// Multisession без CloseDisc — должно работать
+	opts2 := models.BurnOptions{
+		Multisession: true,
+		CloseDisc:    false,
+	}
+
+	result, err := svc.GetBurnCommand(project, "/dev/sr0", opts2)
 	if err != nil {
 		t.Fatalf("GetBurnCommand: %v", err)
 	}

@@ -46,7 +46,7 @@ BurnService.StartBurn()
 | `burnOptions.burnMode` | `-write_type` | `-write_type TAO` или `-write_type DAO` |
 | `burnOptions.dummyMode` | `-dummy on` | Симуляция без записи |
 | `burnOptions.closeDisc` | `-close on` | Финализация диска |
-| `burnOptions.padding` | `-padding` | `-padding 300` (в секторах) |
+| `burnOptions.padding` | `-padding` | `-padding 300k` (в KiB) |
 | `burnOptions.streamRecording` | `-stream_recording on` | Потоковая запись (Blu-ray) |
 | `burnOptions.multisession` | `-close off` | Не закрывать сессию |
 | устройство | `-dev` | `-dev /dev/sr0` |
@@ -67,8 +67,8 @@ xorriso \
   -map /home/user/Documents /Documents \
   -map /home/user/Photos/vacation.jpg /Photos/vacation.jpg \
   -speed 8x \
-  -write_type auto \
-  -padding 300 \
+  -write_type TAO \
+  -padding 300k \
   -commit
 ```
 
@@ -96,8 +96,10 @@ xorriso \
 xorriso \
   -pkt_output on \
   -indev /dev/sr0 \
-  -check_media \
-  -check_md5 on
+  -abort_on FAILURE \
+  -md5 on \
+  -check_md5_r FAILURE / -- \
+  -check_media --
 ```
 
 xorriso перечитывает записанные данные и проверяет контрольные суммы.

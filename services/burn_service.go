@@ -83,6 +83,10 @@ func (s *BurnService) StartBurn(project *models.Project, devicePath string, opts
 	}
 	s.mu.Unlock()
 
+	if err := validateBurnOptions(opts); err != nil {
+		return "", err
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancelFn = cancel
 
@@ -173,6 +177,23 @@ func (s *BurnService) FormatDisc(devicePath string, mode string) error {
 	return err
 }
 
+// validateBurnOptions проверяет корректность опций записи
+func validateBurnOptions(opts models.BurnOptions) error {
+	if opts.BurnMode != "" && opts.BurnMode != "auto" {
+		validModes := map[string]bool{"DAO": true, "TAO": true, "SAO": true}
+		if !validModes[opts.BurnMode] {
+			return fmt.Errorf("invalid burn mode: %s (must be DAO, TAO, or SAO)", opts.BurnMode)
+		}
+	}
+	if opts.Padding < 0 {
+		return fmt.Errorf("padding cannot be negative: %d", opts.Padding)
+	}
+	if opts.CloseDisc && opts.Multisession {
+		return fmt.Errorf("closeDisc and multisession are mutually exclusive")
+	}
+	return nil
+}
+
 // buildISOCommand формирует общую часть команды xorriso для ISO-опций и файлов проекта
 func (s *BurnService) buildISOCommand(cmd *xorriso.CommandBuilder, project *models.Project) {
 	if project.VolumeID != "" {
@@ -185,8 +206,12 @@ func (s *BurnService) buildISOCommand(cmd *xorriso.CommandBuilder, project *mode
 	}
 
 	cmd.RockRidge(project.ISOOptions.RockRidge)
-	cmd.Joliet(project.ISOOptions.Joliet)
-	cmd.UDF(project.ISOOptions.UDF)
+	if project.ISOOptions.Joliet {
+		cmd.Joliet(true)
+	}
+	if project.ISOOptions.UDF {
+		cmd.UDF(true)
+	}
 
 	if project.ISOOptions.HFSPlus {
 		cmd.HFSPlus(true)
@@ -221,6 +246,10 @@ func (s *BurnService) GetBurnCommand(project *models.Project, devicePath string,
 	}
 	if len(project.Entries) == 0 {
 		return "", fmt.Errorf("project has no entries")
+	}
+
+	if err := validateBurnOptions(opts); err != nil {
+		return "", err
 	}
 
 	cmd := xorriso.NewCommand()
