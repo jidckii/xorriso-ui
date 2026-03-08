@@ -45,7 +45,7 @@ func ParsePktLine(line string) *PktLine {
 // ParsePktOutput parses all pkt_output lines into a CmdResult
 func ParsePktOutput(output string) *CmdResult {
 	result := &CmdResult{}
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		pkt := ParsePktLine(line)
 		if pkt == nil {
 			continue

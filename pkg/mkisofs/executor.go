@@ -137,7 +137,7 @@ func scanMkisofsLines(data []byte, atEOF bool) (advance int, token []byte, err e
 		return 0, nil, nil
 	}
 	// Find \r or \n
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		if data[i] == '\n' || data[i] == '\r' {
 			return i + 1, data[:i], nil
 		}

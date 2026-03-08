@@ -166,7 +166,7 @@ func TestGetDriveProfiles(t *testing.T) {
 	}
 
 	svc := NewDeviceService(runner)
-	svc.emitEvent = func(name string, data ...interface{}) {} // no-op для тестов
+	svc.emitEvent = func(name string, data ...any) {} // no-op для тестов
 
 	profiles, err := svc.GetDriveProfiles("/dev/sr0")
 	if err != nil {
@@ -205,7 +205,7 @@ func TestGetSpeeds(t *testing.T) {
 	}
 
 	svc := NewDeviceService(runner)
-	svc.emitEvent = func(name string, data ...interface{}) {}
+	svc.emitEvent = func(name string, data ...any) {}
 
 	speeds, err := svc.GetSpeeds("/dev/sr0")
 	if err != nil {
@@ -214,6 +214,65 @@ func TestGetSpeeds(t *testing.T) {
 
 	if len(speeds) == 0 {
 		t.Fatal("expected non-empty speeds list")
+	}
+}
+
+func TestProfileCaching(t *testing.T) {
+	// Создаём temp proc/sys
+	tmpDir := t.TempDir()
+	procPath := filepath.Join(tmpDir, "cdrom_info")
+	sysPath := filepath.Join(tmpDir, "sys_block")
+
+	procContent := `CD-ROM information, Id: cdrom.c 3.20 2003/12/17
+
+drive name:		sr0
+drive speed:		48
+drive # of slots:	1
+Can close tray:		1
+Can lock tray:		1
+`
+	os.WriteFile(procPath, []byte(procContent), 0644)
+
+	deviceDir := filepath.Join(sysPath, "sr0", "device")
+	os.MkdirAll(deviceDir, 0755)
+	os.WriteFile(filepath.Join(deviceDir, "vendor"), []byte("ASUS\n"), 0644)
+	os.WriteFile(filepath.Join(deviceDir, "model"), []byte("BW-16D1HT\n"), 0644)
+	os.WriteFile(filepath.Join(deviceDir, "rev"), []byte("3.02\n"), 0644)
+
+	callCount := 0
+	runner := &mockRunner{
+		RunFn: func(ctx context.Context, args ...string) (*xorriso.CmdResult, error) {
+			callCount++
+			return &xorriso.CmdResult{
+				ResultLines: []string{
+					"Profile      : 0x0009 (CD-R)",
+					"Profile      : 0x001B (DVD+R) (current)",
+				},
+			}, nil
+		},
+	}
+
+	svc := NewDeviceService(runner)
+	svc.emitEvent = func(name string, data ...any) {}
+	svc.procCdromInfoPath = procPath
+	svc.sysBlockPath = sysPath
+
+	// Первый вызов — должен обратиться к xorriso
+	_, err := svc.ListDevices()
+	if err != nil {
+		t.Fatalf("first ListDevices: %v", err)
+	}
+	if callCount != 1 {
+		t.Fatalf("expected 1 xorriso call after first ListDevices, got %d", callCount)
+	}
+
+	// Второй вызов — должен использовать кэш
+	_, err = svc.ListDevices()
+	if err != nil {
+		t.Fatalf("second ListDevices: %v", err)
+	}
+	if callCount != 1 {
+		t.Fatalf("expected still 1 xorriso call after second ListDevices, got %d", callCount)
 	}
 }
 
@@ -241,7 +300,7 @@ func TestGetMediaInfo(t *testing.T) {
 	}
 
 	svc := NewDeviceService(runner)
-	svc.emitEvent = func(name string, data ...interface{}) {}
+	svc.emitEvent = func(name string, data ...any) {}
 
 	info, err := svc.GetMediaInfo("/dev/sr0")
 	if err != nil {

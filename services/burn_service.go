@@ -28,7 +28,7 @@ type BurnService struct {
 	mu              sync.Mutex
 	currentJob      *models.BurnJob
 	cancelFn        context.CancelFunc
-	emitEvent       func(name string, data ...interface{})
+	emitEvent       func(name string, data ...any)
 }
 
 func NewBurnService(executor xorriso.Runner, mkisofsExecutor mkisofs.ISOBuilder) *BurnService {
@@ -39,7 +39,7 @@ func NewBurnService(executor xorriso.Runner, mkisofsExecutor mkisofs.ISOBuilder)
 	}
 }
 
-func defaultEmitEvent(name string, data ...interface{}) {
+func defaultEmitEvent(name string, data ...any) {
 	if app := application.Get(); app != nil {
 		app.Event.Emit(name, data...)
 	}

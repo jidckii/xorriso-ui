@@ -2,6 +2,7 @@ package mkisofs
 
 import (
 	"bufio"
+	"slices"
 	"strings"
 	"testing"
 
@@ -75,13 +76,7 @@ func TestBuildArgs_MinimalFlags(t *testing.T) {
 	// Обязательные флаги должны быть
 	mustHave := []string{"-o", "/tmp/minimal.iso", "-graft-points"}
 	for _, m := range mustHave {
-		found := false
-		for _, arg := range args {
-			if arg == m {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(args, m)
 		if !found {
 			t.Errorf("expected flag %q not found in args: %v", m, args)
 		}

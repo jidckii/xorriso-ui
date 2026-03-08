@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -26,7 +27,7 @@ func (m *mockISOBuilder) BuildISO(ctx context.Context, opts mkisofs.BuildOpts, p
 }
 
 // noopEmit заглушка для emitEvent
-func noopEmit(name string, data ...interface{}) {}
+func noopEmit(name string, data ...any) {}
 
 func TestCheckDiskSpace(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -397,23 +398,18 @@ func TestGetBurnCommand_NoEntries(t *testing.T) {
 // --- Вспомогательные функции ---
 
 func joinArgs(args []string) string {
-	result := ""
+	var result strings.Builder
 	for i, a := range args {
 		if i > 0 {
-			result += " "
+			result.WriteString(" ")
 		}
-		result += a
+		result.WriteString(a)
 	}
-	return result
+	return result.String()
 }
 
 func containsArg(args []string, target string) bool {
-	for _, a := range args {
-		if a == target {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(args, target)
 }
 
 func containsSubstring(s, substr string) bool {

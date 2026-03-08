@@ -21,7 +21,7 @@ type BurnJob struct {
 	Progress   BurnProgress `json:"progress"`
 	Result     *BurnResult  `json:"result,omitempty"`
 	StartedAt  time.Time    `json:"startedAt"`
-	FinishedAt time.Time    `json:"finishedAt,omitempty"`
+	FinishedAt time.Time    `json:"finishedAt"`
 	Error      string       `json:"error,omitempty"`
 }
 

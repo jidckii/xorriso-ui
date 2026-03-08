@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"xorriso-ui/pkg/models"
+	"xorriso-ui/pkg/udev"
 	"xorriso-ui/pkg/xorriso"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -27,10 +28,12 @@ type DeviceService struct {
 	mu        sync.RWMutex
 	devices   []models.Device
 	stopCh    chan struct{}
-	emitEvent func(name string, data ...interface{})
+	emitEvent func(name string, data ...any)
 	// Paths for /proc and /sys, overridable for testing
 	procCdromInfoPath string
 	sysBlockPath      string
+	// Кэш профилей привода — профили не меняются для одного и того же устройства
+	profileCache map[string][]models.MediaProfile
 }
 
 func NewDeviceService(executor xorriso.Runner) *DeviceService {
@@ -40,6 +43,7 @@ func NewDeviceService(executor xorriso.Runner) *DeviceService {
 		emitEvent:         defaultEmitEvent,
 		procCdromInfoPath: "/proc/sys/dev/cdrom/info",
 		sysBlockPath:      "/sys/block",
+		profileCache:      make(map[string][]models.MediaProfile),
 	}
 }
 
@@ -51,6 +55,7 @@ func (s *DeviceService) ServiceName() string {
 // ServiceStartup is called by Wails when the app starts
 func (s *DeviceService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	go s.pollDevices()
+	go s.watchMediaChanges()
 	return nil
 }
 
@@ -67,9 +72,22 @@ func (s *DeviceService) ListDevices() ([]models.Device, error) {
 		return nil, fmt.Errorf("failed to discover drives: %w", err)
 	}
 
-	// Enrich each device with supported profiles from xorriso
+	// Очистка устаревших записей из кэша профилей
+	activeDevices := make(map[string]bool)
+	for _, d := range devices {
+		activeDevices[d.Path] = true
+	}
+	s.mu.Lock()
+	for path := range s.profileCache {
+		if !activeDevices[path] {
+			delete(s.profileCache, path)
+		}
+	}
+	s.mu.Unlock()
+
+	// Обогащаем каждое устройство профилями (с кэшированием)
 	for i := range devices {
-		profiles, err := s.GetDriveProfiles(devices[i].Path)
+		profiles, err := s.getCachedProfiles(devices[i].Path)
 		if err == nil {
 			devices[i].Profiles = profiles
 		}
@@ -80,6 +98,28 @@ func (s *DeviceService) ListDevices() ([]models.Device, error) {
 	s.mu.Unlock()
 
 	return devices, nil
+}
+
+// getCachedProfiles возвращает профили привода из кэша или запрашивает через xorriso.
+// Профили привода (поддерживаемые типы дисков) не меняются — кэшируем навсегда.
+func (s *DeviceService) getCachedProfiles(devicePath string) ([]models.MediaProfile, error) {
+	s.mu.RLock()
+	if cached, ok := s.profileCache[devicePath]; ok {
+		s.mu.RUnlock()
+		return cached, nil
+	}
+	s.mu.RUnlock()
+
+	profiles, err := s.GetDriveProfiles(devicePath)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	s.profileCache[devicePath] = profiles
+	s.mu.Unlock()
+
+	return profiles, nil
 }
 
 // discoverDrivesFromProc reads /proc/sys/dev/cdrom/info to get drive names
@@ -327,8 +367,53 @@ func extractAfterColon(line string) string {
 // Returns the manufacturer name (part after comma), or the full value if no comma.
 func extractMediaProduct(line string) string {
 	val := extractAfterColon(line)
-	if idx := strings.Index(val, ","); idx >= 0 {
-		return strings.TrimSpace(val[idx+1:])
+	if _, after, ok := strings.Cut(val, ","); ok {
+		return strings.TrimSpace(after)
 	}
 	return val
+}
+
+// watchMediaChanges слушает udev netlink события для оптических приводов.
+// При обнаружении change-события (вставка/извлечение диска) отправляет
+// событие device:media-changed во фронтенд. Использует debounce 2с для
+// предотвращения дублирования событий.
+func (s *DeviceService) watchMediaChanges() {
+	mon, err := udev.New()
+	if err != nil {
+		// udev недоступен (контейнер, отсутствие прав и т.д.) — не критично
+		fmt.Fprintf(os.Stderr, "udev monitor unavailable: %v\n", err)
+		return
+	}
+	defer func() { _ = mon.Close() }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-s.stopCh
+		cancel()
+	}()
+
+	events, err := mon.Listen(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "udev listen failed: %v\n", err)
+		return
+	}
+
+	// Debounce: отслеживаем время последнего события на каждое устройство
+	lastEvent := make(map[string]time.Time)
+	debounceInterval := 2 * time.Second
+
+	for ev := range events {
+		if ev.Action != "change" {
+			continue
+		}
+		devPath := "/dev/" + ev.DevName
+		now := time.Now()
+		if last, ok := lastEvent[devPath]; ok && now.Sub(last) < debounceInterval {
+			continue
+		}
+		lastEvent[devPath] = now
+		s.emitEvent(models.EventDeviceMediaChanged, map[string]string{
+			"devicePath": devPath,
+		})
+	}
 }

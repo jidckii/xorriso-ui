@@ -117,6 +117,7 @@ export const useDeviceStore = defineStore('device', () => {
       const data = eventData?.data
       if (data?.devicePath === currentDevicePath.value) {
         fetchMediaInfo()
+        fetchSpeeds()
       }
     })
 
