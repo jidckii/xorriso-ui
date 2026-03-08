@@ -6,7 +6,7 @@
     "new": "Новый",
     "open": "Открыть",
     "save": "Сохранить",
-    "burn": "Записать"
+    "burn": "Прожиг"
   },
   "project": {
     "fileBrowser": "Проводник",
@@ -102,30 +102,23 @@
     "verifying": "Проверка"
   },
   "settings": {
-    "title": "Настройки",
-    "subtitle": "Настройка параметров приложения xorriso-ui",
-    "appearance": "Внешний вид",
-    "language": "Язык",
-    "theme": "Тема",
-    "dark": "Тёмная",
-    "light": "Светлая",
-    "general": "Общие",
     "externalTools": "Внешние утилиты",
-    "toolNotFound": "не найден",
-    "defaultFsOptions": "Параметры файловой системы по умолчанию",
-    "defaultIsoOptions": "Параметры ISO по умолчанию",
-    "isoLevel": "ISO Level",
-    "isoLevel1": "совместимость со старыми системами",
-    "isoLevel3": "файлы >4ГБ (рекомендуется для BD/BDXL)",
-    "isoLevelHelp": "Level 1: совместимость со старыми системами. Level 3: поддержка больших файлов, рекомендуется для BD/BDXL.",
-    "rockRidge": "Расширения Rock Ridge (атрибуты файлов Linux/Unix)",
-    "joliet": "Расширения Joliet (длинные имена файлов Windows)",
-    "md5": "Записывать контрольные суммы MD5",
-    "backupMode": "Режим резервной копии (сохраняет ACL, xattr, hardlinks)",
-    "saveSettings": "Сохранить",
-    "saving": "Сохранение...",
-    "savedSuccessfully": "Настройки успешно сохранены.",
-    "udf": "Файловая система UDF (обязательно для Blu-ray)"
+    "toolNotFound": "не найден"
+  },
+  "info": {
+    "title": "Информация",
+    "subtitle": "Информация о приложении xorriso-ui",
+    "appVersion": "Версия приложения",
+    "hotkeys": "Горячие клавиши",
+    "hotkeyNavigate": "Навигация по файлам",
+    "hotkeyExpand": "Раскрыть директорию",
+    "hotkeyCollapse": "Свернуть директорию",
+    "hotkeyToggleSelect": "Выбрать / снять выбор",
+    "hotkeyAddToProject": "Добавить выбранное в проект",
+    "hotkeyRemove": "Удалить выбранное из проекта",
+    "hotkeyDeselectAll": "Снять все выделения",
+    "hotkeyEditPath": "Редактировать путь",
+    "hotkeyFocusPanel": "Переключить фокус между панелями"
   },
   "device": {
     "selectDevice": "Выберите устройство...",

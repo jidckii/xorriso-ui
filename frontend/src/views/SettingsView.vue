@@ -1,65 +1,26 @@
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useThemeStore } from '../stores/themeStore'
-import { GetSettings, SaveSettings, GetToolsInfo } from '../../bindings/xorriso-ui/services/settingsservice.js'
+import { GetToolsInfo, GetAppVersion } from '../../bindings/xorriso-ui/services/settingsservice.js'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const router = useRouter()
-const themeStore = useThemeStore()
 
-// --- State ---
-const saving = ref(false)
-const saveError = ref('')
 const toolsInfo = ref([])
+const appVersion = ref('')
 
-const settings = reactive({
-  language: locale.value,
-  theme: themeStore.currentTheme,
-})
-
-// Apply language change immediately
-watch(() => settings.language, (newLang) => {
-  locale.value = newLang
-  localStorage.setItem('xorriso-language', newLang)
-})
-
-// Apply theme change immediately
-watch(() => settings.theme, (newTheme) => {
-  themeStore.setTheme(newTheme === 'dark')
-})
-
-// --- Actions ---
-async function loadSettings() {
-  try {
-    const result = await GetSettings()
-    if (result) {
-      settings.language = result.language || 'en'
-      settings.theme = result.theme || 'dark'
-    }
-  } catch (error) {
-    console.error('Failed to load settings:', error)
-  }
-}
-
-async function saveSettings() {
-  saving.value = true
-  saveError.value = ''
-  try {
-    await SaveSettings({
-      language: settings.language,
-      theme: settings.theme,
-    })
-    goBack()
-  } catch (error) {
-    console.error('Failed to save settings:', error)
-    saveError.value = String(error)
-    setTimeout(() => { saveError.value = '' }, 5000)
-  } finally {
-    saving.value = false
-  }
-}
+const hotkeys = [
+  { keys: ['Arrow Up', 'Arrow Down'], action: 'info.hotkeyNavigate' },
+  { keys: ['Arrow Right'], action: 'info.hotkeyExpand' },
+  { keys: ['Arrow Left'], action: 'info.hotkeyCollapse' },
+  { keys: ['Space'], action: 'info.hotkeyToggleSelect' },
+  { keys: ['Enter'], action: 'info.hotkeyAddToProject' },
+  { keys: ['Delete'], action: 'info.hotkeyRemove' },
+  { keys: ['Escape'], action: 'info.hotkeyDeselectAll' },
+  { keys: ['Ctrl + L'], action: 'info.hotkeyEditPath' },
+  { keys: ['Tab'], action: 'info.hotkeyFocusPanel' },
+]
 
 function goBack() {
   router.push('/')
@@ -68,17 +29,23 @@ function goBack() {
 async function loadToolsInfo() {
   try {
     const result = await GetToolsInfo()
-    if (result) {
-      toolsInfo.value = result
-    }
-  } catch (error) {
-    console.error('Failed to get tools info:', error)
+    if (result) toolsInfo.value = result
+  } catch (e) {
+    console.error('Failed to get tools info:', e)
   }
 }
 
-// Load on mount
-loadSettings()
+async function loadAppVersion() {
+  try {
+    const result = await GetAppVersion()
+    if (result) appVersion.value = result
+  } catch (e) {
+    appVersion.value = 'unknown'
+  }
+}
+
 loadToolsInfo()
+loadAppVersion()
 </script>
 
 <template>
@@ -87,8 +54,8 @@ loadToolsInfo()
 
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-xl font-semibold">{{ t('settings.title') }}</h1>
-          <p class="text-sm text-gray-500 mt-1">{{ t('settings.subtitle') }}</p>
+          <h1 class="text-xl font-semibold">{{ t('info.title') }}</h1>
+          <p class="text-sm text-gray-500 mt-1">{{ t('info.subtitle') }}</p>
         </div>
         <button
           @click="goBack"
@@ -100,73 +67,64 @@ loadToolsInfo()
         </button>
       </div>
 
-      <!-- Appearance -->
+      <!-- App version -->
       <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.appearance') }}</h2>
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('info.appVersion') }}</h2>
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.5" />
+            <circle cx="12" cy="12" r="3" stroke-width="1.5" />
+            <circle cx="12" cy="12" r="6" stroke-width="0.5" opacity="0.5" />
+          </svg>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">xorriso-ui</span>
+          <span class="text-sm text-gray-500">{{ appVersion || '...' }}</span>
+        </div>
+      </section>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.language') }}</label>
-            <select
-              v-model="settings.language"
-              class="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
+      <!-- External tools -->
+      <section class="space-y-3">
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.externalTools') }}</h2>
+        <div class="space-y-2">
+          <div v-for="tool in toolsInfo" :key="tool.name" class="flex items-center gap-3">
+            <span
+              class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
+              :class="tool.found ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
             >
-              <option value="en">English</option>
-              <option value="ru">Русский</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.theme') }}</label>
-            <select
-              v-model="settings.theme"
-              class="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
-            >
-              <option value="dark">{{ t('settings.dark') }}</option>
-              <option value="light">{{ t('settings.light') }}</option>
-            </select>
+              <svg v-if="tool.found" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ tool.name }}</span>
+            <span v-if="tool.found" class="text-xs text-gray-500">{{ tool.version }}</span>
+            <span v-else class="text-xs text-red-400">{{ t('settings.toolNotFound') }}</span>
           </div>
         </div>
       </section>
 
-      <!-- General -->
-      <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.general') }}</h2>
-
-        <!-- External tools status -->
-        <div>
-          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.externalTools') }}</label>
-          <div class="space-y-2">
-            <div v-for="tool in toolsInfo" :key="tool.name" class="flex items-center gap-3">
-              <span
-                class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
-                :class="tool.found ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
-              >
-                <svg v-if="tool.found" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                </svg>
-                <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </span>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ tool.name }}</span>
-              <span v-if="tool.found" class="text-xs text-gray-500 dark:text-gray-500">{{ tool.version }}</span>
-              <span v-else class="text-xs text-red-400">{{ t('settings.toolNotFound') }}</span>
+      <!-- Hotkeys -->
+      <section class="space-y-3 border-t border-gray-300 dark:border-gray-700 pt-6">
+        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('info.hotkeys') }}</h2>
+        <div class="space-y-2">
+          <div
+            v-for="(hk, i) in hotkeys"
+            :key="i"
+            class="flex items-center gap-3"
+          >
+            <div class="flex gap-1 shrink-0" style="min-width: 180px;">
+              <kbd
+                v-for="key in hk.keys"
+                :key="key"
+                class="px-2 py-0.5 text-xs font-mono rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
+              >{{ key }}</kbd>
             </div>
+            <span class="text-sm text-gray-600 dark:text-gray-400">{{ t(hk.action) }}</span>
           </div>
         </div>
       </section>
 
-      <!-- Save -->
-      <div class="flex items-center gap-3 pt-4 border-t border-gray-300 dark:border-gray-700">
-        <button
-          @click="saveSettings"
-          :disabled="saving"
-          class="px-6 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 transition-colors"
-        >
-          {{ saving ? t('settings.saving') : t('settings.saveSettings') }}
-        </button>
-        <span v-if="saveError" class="text-sm text-red-400">{{ saveError }}</span>
-      </div>
     </div>
   </div>
 </template>

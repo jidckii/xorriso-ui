@@ -12,10 +12,15 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
+// version задаётся при сборке через ldflags: -ldflags "-X main.version=1.0.0"
+var version = "development"
+
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
+	services.AppVersion = version
+
 	xorrisoPath, err := exec.LookPath("xorriso")
 	if err != nil {
 		log.Fatal("xorriso not found in PATH. Please install xorriso (version 1.5.6+): sudo apt install xorriso / sudo zypper install xorriso")

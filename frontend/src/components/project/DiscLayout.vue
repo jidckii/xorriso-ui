@@ -201,6 +201,20 @@ async function onDrop(event) {
   }
 }
 
+// Keyboard shortcuts
+function onKeydown(e) {
+  switch (e.key) {
+    case 'Delete':
+      e.preventDefault()
+      removeSelectedFromProject()
+      break
+    case 'Escape':
+      e.preventDefault()
+      deselectAll()
+      break
+  }
+}
+
 // Context menu
 const contextMenu = reactive({
   show: false,
@@ -270,7 +284,7 @@ const propertiesModal = reactive({
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full outline-none" tabindex="0" @keydown="onKeydown">
     <PanelHeader>
       <template #row1>
         <svg class="w-4 h-4 text-gray-600 dark:text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

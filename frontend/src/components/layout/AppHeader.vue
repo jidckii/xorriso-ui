@@ -5,14 +5,30 @@ import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '../../stores/themeStore'
 import { useTabStore } from '../../stores/tabStore'
 import { useProjectStore } from '../../stores/projectStore'
+import { SaveSettings, GetSettings } from '../../../bindings/xorriso-ui/services/settingsservice.js'
 import Button from '../ui/Button.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const themeStore = useThemeStore()
 const tabStore = useTabStore()
 const projectStore = useProjectStore()
+
+async function toggleLanguage() {
+  const newLang = locale.value === 'ru' ? 'en' : 'ru'
+  locale.value = newLang
+  localStorage.setItem('xorriso-language', newLang)
+  try {
+    const settings = await GetSettings()
+    if (settings) {
+      settings.language = newLang
+      await SaveSettings(settings)
+    }
+  } catch (e) {
+    console.error('Failed to save language:', e)
+  }
+}
 
 async function newProject() {
   const name = t('tabs.untitledProject')
@@ -47,10 +63,6 @@ async function saveProject() {
     if (!filePath) return
     await projectStore.saveProjectAs(tabId, filePath)
   }
-}
-
-function goToBurn() {
-  router.push('/burn')
 }
 
 function toggleDiscInfo() {
@@ -95,18 +107,6 @@ function toggleDiscInfo() {
 
       <div class="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-2" />
 
-      <Button variant="primary" size="sm" @click="goToBurn">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
-        </svg>
-        {{ t('header.burn') }}
-      </Button>
-
-      <div class="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-2" />
-
       <!-- Disc Info toggle -->
       <Button
         :variant="tabStore.showDiscInfo ? 'primary' : 'ghost'"
@@ -124,6 +124,15 @@ function toggleDiscInfo() {
     <!-- Spacer -->
     <div class="flex-1" />
 
+    <!-- Language toggle -->
+    <button
+      @click="toggleLanguage"
+      class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs font-medium text-gray-600 dark:text-gray-400 uppercase"
+      :title="locale === 'ru' ? 'Switch to English' : 'Переключить на русский'"
+    >
+      {{ locale === 'ru' ? 'EN' : 'RU' }}
+    </button>
+
     <!-- Theme toggle -->
     <button
       @click="themeStore.toggleTheme()"
@@ -139,15 +148,14 @@ function toggleDiscInfo() {
       </svg>
     </button>
 
-    <!-- Settings -->
+    <!-- Info -->
     <button
       @click="route.path === '/settings' ? router.push('/') : router.push('/settings')"
       class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
     >
       <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <circle cx="12" cy="12" r="10" stroke-width="2" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4m0-4h.01" />
       </svg>
     </button>
   </header>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ExternalLink, FolderOpen, Info, FolderPlus } from 'lucide-vue-next'
 import FileBrowserItem from './FileBrowserItem.vue'
@@ -45,6 +45,47 @@ const filteredEntries = computed(() => {
 // Сортировка файлов
 const { sortBy, sortDir, sorted: sortedEntries, toggleSort, sortChildren } = useFileSort(filteredEntries)
 
+// Keyboard navigation: focused item index in flat visible list
+const focusedIndex = ref(-1)
+const listRef = ref(null)
+
+const flatVisibleEntries = computed(() => {
+  const result = []
+  function collect(entries) {
+    for (const entry of entries) {
+      result.push(entry)
+      if (entry.isDir && expandedDirs.value.has(entry.sourcePath)) {
+        const children = dirChildren[entry.sourcePath] || []
+        const filtered = showHidden.value ? children : children.filter(c => !c.name.startsWith('.'))
+        const sorted = sortChildren ? sortChildren(filtered) : filtered
+        collect(sorted)
+      }
+    }
+  }
+  collect(sortedEntries.value)
+  return result
+})
+
+const focusedEntry = computed(() => {
+  const flat = flatVisibleEntries.value
+  if (focusedIndex.value < 0 || focusedIndex.value >= flat.length) return null
+  return flat[focusedIndex.value]
+})
+
+watch(flatVisibleEntries, () => {
+  if (focusedIndex.value >= flatVisibleEntries.value.length) {
+    focusedIndex.value = Math.max(0, flatVisibleEntries.value.length - 1)
+  }
+})
+
+function scrollFocusedIntoView() {
+  nextTick(() => {
+    if (!focusedEntry.value || !listRef.value) return
+    const el = listRef.value.querySelector(`[data-path="${CSS.escape(focusedEntry.value.sourcePath)}"]`)
+    el?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
 // Редактируемый путь (Ctrl+L)
 const editingPath = ref(false)
 const pathInput = ref('')
@@ -69,6 +110,63 @@ function onKeydown(e) {
   if (e.ctrlKey && e.key === 'l') {
     e.preventDefault()
     startEditPath()
+    return
+  }
+
+  // Keyboard navigation in file list
+  const flat = flatVisibleEntries.value
+  if (flat.length === 0) return
+
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault()
+      if (focusedIndex.value < 0) {
+        focusedIndex.value = 0
+      } else {
+        focusedIndex.value = Math.min(focusedIndex.value + 1, flat.length - 1)
+      }
+      scrollFocusedIntoView()
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      if (focusedIndex.value < 0) {
+        focusedIndex.value = 0
+      } else {
+        focusedIndex.value = Math.max(focusedIndex.value - 1, 0)
+      }
+      scrollFocusedIntoView()
+      break
+    case 'ArrowRight': {
+      e.preventDefault()
+      const entry = focusedEntry.value
+      if (entry?.isDir && !expandedDirs.value.has(entry.sourcePath)) {
+        toggleExpand(entry)
+      }
+      break
+    }
+    case 'ArrowLeft': {
+      e.preventDefault()
+      const entry = focusedEntry.value
+      if (entry?.isDir && expandedDirs.value.has(entry.sourcePath)) {
+        toggleExpand(entry)
+      }
+      break
+    }
+    case ' ':
+      e.preventDefault()
+      if (focusedEntry.value) {
+        toggleSelection(focusedEntry.value, e)
+      }
+      break
+    case 'Enter':
+      e.preventDefault()
+      addSelectedToProject()
+      break
+    case 'Escape':
+      e.preventDefault()
+      deselectAll()
+      focusedIndex.value = -1
+      break
   }
 }
 
@@ -347,7 +445,7 @@ watch(tabId, async () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full" @keydown="onKeydown" @contextmenu.prevent tabindex="-1">
+  <div class="flex flex-col h-full outline-none" @keydown="onKeydown" @contextmenu.prevent tabindex="0">
     <FileBrowserToolbar
       :mount-points="mountPoints"
       :browse-path="currentProject?.browsePath || '/'"
@@ -367,7 +465,7 @@ watch(tabId, async () => {
     />
 
     <!-- File list with inline expand -->
-    <div class="flex-1 overflow-y-auto text-sm select-none">
+    <div ref="listRef" class="flex-1 overflow-y-auto text-sm select-none">
       <div v-if="sortedEntries.length === 0" class="text-center text-gray-500 py-8">
         {{ t('project.emptyDirectory') }}
       </div>
@@ -382,6 +480,7 @@ watch(tabId, async () => {
         :selected-paths="selectedPaths"
         :show-hidden="showHidden"
         :sort-fn="sortChildren"
+        :focused-path="focusedEntry?.sourcePath"
         @toggle-expand="toggleExpand"
         @toggle-selection="toggleSelection"
         @dblclick="onDblClick"

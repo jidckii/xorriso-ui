@@ -20,6 +20,9 @@ type AppSettings struct {
 	Theme       string `json:"theme"`
 }
 
+// AppVersion — версия приложения, устанавливается из main.go при запуске
+var AppVersion = "development"
+
 const (
 	xorrisoQueryTimeout = 10 * time.Second
 )
@@ -98,6 +101,11 @@ type ToolInfo struct {
 	Path    string `json:"path"`
 	Version string `json:"version"`
 	Found   bool   `json:"found"`
+}
+
+// GetAppVersion возвращает версию приложения
+func (s *SettingsService) GetAppVersion() string {
+	return AppVersion
 }
 
 // GetXorrisoVersion returns xorriso version info

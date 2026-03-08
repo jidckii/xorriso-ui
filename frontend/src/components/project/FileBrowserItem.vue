@@ -14,6 +14,7 @@ const props = defineProps({
   selectedPaths: { type: Set, required: true },
   showHidden: { type: Boolean, default: false },
   sortFn: { type: Function, default: null },
+  focusedPath: { type: String, default: null },
 })
 
 const emit = defineEmits(['toggle-expand', 'toggle-selection', 'dblclick', 'contextmenu', 'dragstart'])
@@ -63,8 +64,13 @@ function onMouseLeave() {
   <!-- Entry row -->
   <div
     draggable="true"
+    :data-path="entry.sourcePath"
     class="flex items-center gap-1.5 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-    :class="{ 'bg-blue-500/15': isSelected(entry) }"
+    :class="{
+      'bg-blue-500/15': isSelected(entry),
+      'ring-1 ring-blue-400/60 ring-inset': focusedPath === entry.sourcePath && !isSelected(entry),
+      'ring-1 ring-blue-400 ring-inset': focusedPath === entry.sourcePath && isSelected(entry),
+    }"
     :style="{ paddingLeft: (depth * 16 + 8) + 'px', paddingRight: '8px' }"
     @click="emit('toggle-selection', entry, $event)"
     @dblclick="emit('dblclick', entry)"
@@ -134,6 +140,7 @@ function onMouseLeave() {
       :selected-paths="selectedPaths"
       :show-hidden="showHidden"
       :sort-fn="sortFn"
+      :focused-path="focusedPath"
       @toggle-expand="emit('toggle-expand', $event)"
       @toggle-selection="(entry, ev) => emit('toggle-selection', entry, ev)"
       @dblclick="emit('dblclick', $event)"
