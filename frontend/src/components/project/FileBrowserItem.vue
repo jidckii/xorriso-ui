@@ -13,9 +13,10 @@ const props = defineProps({
   dirChildren: { type: Object, required: true },
   selectedPaths: { type: Set, required: true },
   showHidden: { type: Boolean, default: false },
+  sortFn: { type: Function, default: null },
 })
 
-const emit = defineEmits(['toggle-expand', 'toggle-selection', 'dblclick', 'contextmenu'])
+const emit = defineEmits(['toggle-expand', 'toggle-selection', 'dblclick', 'contextmenu', 'dragstart'])
 
 function isExpanded(entry) {
   return props.expandedDirs.has(entry.sourcePath)
@@ -27,8 +28,13 @@ function isSelected(entry) {
 
 function getChildren(entry) {
   const all = props.dirChildren[entry.sourcePath] || []
-  if (props.showHidden) return all
-  return all.filter(c => !c.name.startsWith('.'))
+  const filtered = props.showHidden ? all : all.filter(c => !c.name.startsWith('.'))
+  if (props.sortFn) return props.sortFn(filtered)
+  return filtered
+}
+
+function onDragStart(event) {
+  emit('dragstart', props.entry, event)
 }
 
 // Image preview tooltip state
@@ -56,12 +62,14 @@ function onMouseLeave() {
 <template>
   <!-- Entry row -->
   <div
+    draggable="true"
     class="flex items-center gap-1.5 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
     :class="{ 'bg-blue-500/15': isSelected(entry) }"
     :style="{ paddingLeft: (depth * 16 + 8) + 'px', paddingRight: '8px' }"
     @click="emit('toggle-selection', entry, $event)"
     @dblclick="emit('dblclick', entry)"
     @contextmenu.prevent="emit('contextmenu', entry, $event)"
+    @dragstart="onDragStart"
     @mouseenter="onMouseEnter($event, entry)"
     @mousemove="onMouseMove"
     @mouseleave="onMouseLeave"
@@ -125,10 +133,12 @@ function onMouseLeave() {
       :dir-children="dirChildren"
       :selected-paths="selectedPaths"
       :show-hidden="showHidden"
+      :sort-fn="sortFn"
       @toggle-expand="emit('toggle-expand', $event)"
       @toggle-selection="(entry, ev) => emit('toggle-selection', entry, ev)"
       @dblclick="emit('dblclick', $event)"
       @contextmenu="(entry, ev) => emit('contextmenu', entry, ev)"
+      @dragstart="(entry, ev) => emit('dragstart', entry, ev)"
     />
   </template>
 </template>

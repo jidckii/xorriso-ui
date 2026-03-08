@@ -34,6 +34,7 @@ func (s *ProjectService) BrowseDirectory(path string) ([]models.FileEntry, error
 			Name:       entry.Name(),
 			IsDir:      entry.IsDir(),
 			Size:       info.Size(),
+			ModTime:    info.ModTime().UnixMilli(),
 		}
 		result = append(result, fe)
 	}

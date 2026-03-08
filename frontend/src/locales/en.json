@@ -22,7 +22,8 @@
     "emptyDirectory": "Empty directory",
     "showHidden": "Show hidden files",
     "hideHidden": "Hide hidden files",
-    "goUp": "Up"
+    "goUp": "Up",
+    "dropFilesHere": "Drop files here to add to project"
   },
   "burn": {
     "title": "Burn Disc",
@@ -261,6 +262,12 @@
     "bdDl": "BD-DL 50GB",
     "bdxl100": "BDXL 100GB",
     "bdxl128": "BDXL 128GB"
+  },
+  "sort": {
+    "name": "Name",
+    "size": "Size",
+    "date": "Date",
+    "type": "Type"
   },
   "discInfo": {
     "sessions": "Sessions",

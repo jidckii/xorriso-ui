@@ -10,6 +10,7 @@ import FilePropertiesModal from './FilePropertiesModal.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTabStore } from '../../stores/tabStore'
 import { formatBytes } from '../../composables/useFormatBytes'
+import { useFileSort } from '../../composables/useFileSort'
 
 const { t } = useI18n()
 const projectStore = useProjectStore()
@@ -40,6 +41,9 @@ const filteredEntries = computed(() => {
   if (showHidden.value) return entries.value
   return entries.value.filter(e => !e.name.startsWith('.'))
 })
+
+// Сортировка файлов
+const { sortBy, sortDir, sorted: sortedEntries, toggleSort, sortChildren } = useFileSort(filteredEntries)
 
 // Редактируемый путь (Ctrl+L)
 const editingPath = ref(false)
@@ -216,6 +220,31 @@ async function addSelectedToProject() {
   syncSelection()
 }
 
+// Drag-and-Drop: формируем список путей для переноса
+function onDragStart(entry, event) {
+  let paths
+
+  if (selectedPaths.value.has(entry.sourcePath)) {
+    // Файл выделен — тащим всё выделенное
+    const allPaths = [...selectedPaths.value]
+    const pathSet = new Set(allPaths)
+    paths = allPaths.filter(p => {
+      let parent = p.substring(0, p.lastIndexOf('/'))
+      while (parent) {
+        if (pathSet.has(parent)) return false
+        parent = parent.substring(0, parent.lastIndexOf('/'))
+      }
+      return true
+    })
+  } else {
+    // Файл не выделен — тащим только его
+    paths = [entry.sourcePath]
+  }
+
+  event.dataTransfer.setData('application/xorriso-paths', JSON.stringify(paths))
+  event.dataTransfer.effectAllowed = 'copy'
+}
+
 // Context menu
 const contextMenu = reactive({
   show: false,
@@ -326,22 +355,25 @@ watch(tabId, async () => {
       :editing-path="editingPath"
       v-model:path-input="pathInput"
       :show-hidden="showHidden"
+      :sort-by="sortBy"
+      :sort-dir="sortDir"
       @navigate="navigateTo"
       @go-up="goUp"
       @start-edit="startEditPath"
       @confirm-path="onConfirmPath"
       @cancel-edit="cancelEditPath"
       @toggle-hidden="showHidden = !showHidden"
+      @toggle-sort="toggleSort"
     />
 
     <!-- File list with inline expand -->
     <div class="flex-1 overflow-y-auto text-sm select-none">
-      <div v-if="filteredEntries.length === 0" class="text-center text-gray-500 py-8">
+      <div v-if="sortedEntries.length === 0" class="text-center text-gray-500 py-8">
         {{ t('project.emptyDirectory') }}
       </div>
 
       <FileBrowserItem
-        v-for="entry in filteredEntries"
+        v-for="entry in sortedEntries"
         :key="entry.sourcePath"
         :entry="entry"
         :depth="0"
@@ -349,10 +381,12 @@ watch(tabId, async () => {
         :dir-children="dirChildren"
         :selected-paths="selectedPaths"
         :show-hidden="showHidden"
+        :sort-fn="sortChildren"
         @toggle-expand="toggleExpand"
         @toggle-selection="toggleSelection"
         @dblclick="onDblClick"
         @contextmenu="onContextMenu"
+        @dragstart="onDragStart"
       />
     </div>
 

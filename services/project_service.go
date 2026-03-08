@@ -92,6 +92,7 @@ func (s *ProjectService) AddFiles(project *models.Project, sourcePaths []string,
 				Name:       filepath.Base(src),
 				IsDir:      true,
 				Size:       size,
+				ModTime:    info.ModTime().UnixMilli(),
 			}
 			project.Entries = append(project.Entries, dirEntry)
 
@@ -108,6 +109,7 @@ func (s *ProjectService) AddFiles(project *models.Project, sourcePaths []string,
 					Name:       fi.Name(),
 					IsDir:      fi.IsDir(),
 					Size:       fi.Size(),
+					ModTime:    fi.ModTime().UnixMilli(),
 				})
 				return nil
 			})
@@ -118,6 +120,7 @@ func (s *ProjectService) AddFiles(project *models.Project, sourcePaths []string,
 				Name:       filepath.Base(src),
 				IsDir:      false,
 				Size:       info.Size(),
+				ModTime:    info.ModTime().UnixMilli(),
 			})
 		}
 	}

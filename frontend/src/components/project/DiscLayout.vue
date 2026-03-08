@@ -8,9 +8,11 @@ import DiscLayoutTree from './DiscLayoutTree.vue'
 import DiscLayoutToolbar from './DiscLayoutToolbar.vue'
 import ContextMenu from '../ui/ContextMenu.vue'
 import FilePropertiesModal from './FilePropertiesModal.vue'
+import SortButtons from '../ui/SortButtons.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTabStore } from '../../stores/tabStore'
 import { formatBytes } from '../../composables/useFormatBytes'
+import { useFileSort } from '../../composables/useFileSort'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -20,12 +22,28 @@ const tabStore = useTabStore()
 const currentProject = computed(() => tabStore.activeProject)
 const tabId = computed(() => tabStore.activeTabId)
 
+// Сортировка дерева диска
+const { sortBy: discSortBy, sortDir: discSortDir, toggleSort: discToggleSort, compareFn: discCompareFn } = useFileSort(ref([]))
+
+// Рекурсивная сортировка дочерних узлов дерева
+function sortTreeChildren(items) {
+  if (!items || items.length === 0) return items
+  return [...items].sort(discCompareFn).map(item => ({
+    ...item,
+    children: sortTreeChildren(item.children),
+  }))
+}
+
 // Построение дерева из плоского списка записей
 const treeItems = computed(() => {
   const entries = currentProject.value?.entries || []
   if (entries.length === 0) return []
-  return buildTreeFromEntries(entries)
+  const tree = buildTreeFromEntries(entries)
+  return sortTreeChildren(tree)
 })
+
+// Drag-and-Drop состояние
+const isDragOver = ref(false)
 
 function buildTreeFromEntries(entries) {
   const root = { children: [] }
@@ -156,6 +174,33 @@ const canBurn = computed(() => {
   return currentProject.value && currentProject.value.entries.length > 0
 })
 
+// Drag-and-Drop обработчики
+function onDragOver(event) {
+  isDragOver.value = true
+  event.dataTransfer.dropEffect = 'copy'
+}
+
+function onDragLeave(event) {
+  // Проверяем что курсор действительно покинул контейнер (а не перешёл на дочерний элемент)
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    isDragOver.value = false
+  }
+}
+
+async function onDrop(event) {
+  isDragOver.value = false
+  const raw = event.dataTransfer.getData('application/xorriso-paths')
+  if (!raw) return
+  try {
+    const paths = JSON.parse(raw)
+    if (Array.isArray(paths) && paths.length > 0) {
+      await projectStore.addFiles(tabId.value, paths)
+    }
+  } catch {
+    // Невалидный JSON — игнорируем
+  }
+}
+
 // Context menu
 const contextMenu = reactive({
   show: false,
@@ -234,6 +279,11 @@ const propertiesModal = reactive({
         </svg>
         <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ t('project.discLayout') }}</span>
         <span class="flex-1" />
+        <SortButtons
+          :sort-by="discSortBy"
+          :sort-dir="discSortDir"
+          @toggle-sort="discToggleSort"
+        />
       </template>
       <template #row2>
         <span class="text-xs text-gray-500">
@@ -243,7 +293,13 @@ const propertiesModal = reactive({
     </PanelHeader>
 
     <!-- Содержимое дерева -->
-    <div class="flex-1 overflow-y-auto">
+    <div
+      class="flex-1 overflow-y-auto transition-colors"
+      :class="{ 'ring-2 ring-blue-500 ring-inset bg-blue-500/5': isDragOver }"
+      @dragover.prevent="onDragOver"
+      @dragleave="onDragLeave"
+      @drop.prevent="onDrop"
+    >
       <!-- Пустое состояние -->
       <div
         v-if="!currentProject?.entries?.length"
@@ -253,7 +309,7 @@ const propertiesModal = reactive({
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
             d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p class="text-sm">{{ t('common.addFilesFromBrowser') }}</p>
+        <p class="text-sm">{{ isDragOver ? t('project.dropFilesHere') : t('common.addFilesFromBrowser') }}</p>
       </div>
 
       <!-- Дерево файлов -->

@@ -19,6 +19,7 @@ type FileEntry struct {
 	Name       string `json:"name"`
 	IsDir      bool   `json:"isDir"`
 	Size       int64  `json:"size"`
+	ModTime    int64  `json:"modTime"` // Unix timestamp в миллисекундах
 }
 
 type ISOOptions struct {

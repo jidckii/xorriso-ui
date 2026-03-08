@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ArrowUp, Home, Usb, Eye, EyeOff } from 'lucide-vue-next'
 import PanelHeader from '../ui/PanelHeader.vue'
+import SortButtons from '../ui/SortButtons.vue'
 
 const { t } = useI18n()
 
@@ -13,6 +14,8 @@ const props = defineProps({
   editingPath: { type: Boolean, default: false },
   pathInput: { type: String, default: '' },
   showHidden: { type: Boolean, default: false },
+  sortBy: { type: String, default: 'name' },
+  sortDir: { type: String, default: 'asc' },
 })
 
 const emit = defineEmits([
@@ -22,6 +25,7 @@ const emit = defineEmits([
   'confirm-path',
   'cancel-edit',
   'toggle-hidden',
+  'toggle-sort',
   'update:pathInput',
 ])
 
@@ -69,6 +73,14 @@ function onConfirmPath() {
       </button>
 
       <span class="flex-1" />
+
+      <SortButtons
+        :sort-by="sortBy"
+        :sort-dir="sortDir"
+        @toggle-sort="emit('toggle-sort', $event)"
+      />
+
+      <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-0.5 shrink-0" />
 
       <button
         @click="emit('toggle-hidden')"
