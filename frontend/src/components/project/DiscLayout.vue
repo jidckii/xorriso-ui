@@ -1,10 +1,13 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { ExternalLink, Trash2, Info } from 'lucide-vue-next'
 import PanelHeader from '../ui/PanelHeader.vue'
 import DiscLayoutTree from './DiscLayoutTree.vue'
 import DiscLayoutToolbar from './DiscLayoutToolbar.vue'
+import ContextMenu from '../ui/ContextMenu.vue'
+import FilePropertiesModal from './FilePropertiesModal.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTabStore } from '../../stores/tabStore'
 import { formatBytes } from '../../composables/useFormatBytes'
@@ -152,6 +155,67 @@ function goToBurn() {
 const canBurn = computed(() => {
   return currentProject.value && currentProject.value.entries.length > 0
 })
+
+// Context menu
+const contextMenu = reactive({
+  show: false,
+  x: 0,
+  y: 0,
+  entry: null,
+})
+
+const contextMenuItems = computed(() => {
+  if (!contextMenu.entry) return []
+  const items = []
+  if (contextMenu.entry.sourcePath) {
+    items.push({ label: t('contextMenu.open'), icon: ExternalLink, action: 'open' })
+  }
+  items.push({ label: t('contextMenu.removeFromProject'), icon: Trash2, action: 'remove' })
+  if (contextMenu.entry.sourcePath) {
+    items.push({ separator: true })
+    items.push({ label: t('contextMenu.properties'), icon: Info, action: 'properties' })
+  }
+  return items
+})
+
+function onContextMenu(item, event) {
+  event.preventDefault()
+  event.stopPropagation()
+  contextMenu.entry = item
+  contextMenu.x = event.clientX
+  contextMenu.y = event.clientY
+  contextMenu.show = true
+}
+
+function onContextMenuSelect(action) {
+  const entry = contextMenu.entry
+  if (!entry) return
+
+  switch (action) {
+    case 'open':
+      if (entry.sourcePath) {
+        projectStore.openWithDefault(entry.sourcePath)
+      }
+      break
+    case 'remove':
+      if (currentProject.value) {
+        projectStore.removeEntries(tabId.value, [entry.destPath])
+      }
+      break
+    case 'properties':
+      if (entry.sourcePath) {
+        propertiesModal.filePath = entry.sourcePath
+        propertiesModal.show = true
+      }
+      break
+  }
+}
+
+// File properties modal
+const propertiesModal = reactive({
+  show: false,
+  filePath: '',
+})
 </script>
 
 <template>
@@ -193,8 +257,26 @@ const canBurn = computed(() => {
         v-model:expanded="expanded"
         :selected-keys="selectedKeys"
         @toggle-selection="toggleItemSelection"
+        @contextmenu="onContextMenu"
       />
     </div>
+
+    <!-- Context Menu -->
+    <ContextMenu
+      :show="contextMenu.show"
+      :x="contextMenu.x"
+      :y="contextMenu.y"
+      :items="contextMenuItems"
+      @close="contextMenu.show = false"
+      @select="onContextMenuSelect"
+    />
+
+    <!-- File Properties Modal -->
+    <FilePropertiesModal
+      :show="propertiesModal.show"
+      :file-path="propertiesModal.filePath"
+      @close="propertiesModal.show = false"
+    />
 
     <!-- Панель инструментов -->
     <DiscLayoutToolbar

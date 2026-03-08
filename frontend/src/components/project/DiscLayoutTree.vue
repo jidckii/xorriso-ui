@@ -22,7 +22,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:expanded', 'toggle-selection'])
+const emit = defineEmits(['update:expanded', 'toggle-selection', 'contextmenu'])
 
 const expandedModel = computed({
   get: () => props.expanded,
@@ -62,6 +62,7 @@ function isItemSelected(key) {
         :class="{ 'bg-blue-500/15': isItemSelected(item.value._key) }"
         :style="{ paddingLeft: (item.level * 16 + 8) + 'px', paddingRight: '8px' }"
         @click="emit('toggle-selection', item.value)"
+        @contextmenu.prevent="emit('contextmenu', item.value, $event)"
         @mouseenter="onItemMouseEnter($event, item.value)"
         @mousemove="onItemMouseMove"
         @mouseleave="onItemMouseLeave"

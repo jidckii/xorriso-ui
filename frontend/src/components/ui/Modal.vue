@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch, onUnmounted } from 'vue'
 
 const props = defineProps({
   show: Boolean,
@@ -28,6 +28,15 @@ function onBackdropClick(e) {
     emit('close')
   }
 }
+
+// Hide scrollbars on underlying content when modal is open
+watch(() => props.show, (val) => {
+  document.documentElement.style.overflow = val ? 'hidden' : ''
+})
+
+onUnmounted(() => {
+  document.documentElement.style.overflow = ''
+})
 </script>
 
 <template>

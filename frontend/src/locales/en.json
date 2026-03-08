@@ -215,6 +215,7 @@
   "contextMenu": {
     "open": "Open",
     "addToProject": "Add to project",
+    "removeFromProject": "Remove from project",
     "properties": "Properties"
   },
   "fileProperties": {
