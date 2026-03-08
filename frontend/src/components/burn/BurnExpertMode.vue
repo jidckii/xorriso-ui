@@ -330,10 +330,6 @@ const canBurn = computed(() => {
             <input type="checkbox" v-model="project.burnOptions.multisession" class="accent-blue-500" />
             {{ t('burn.multisession') }}
           </label>
-          <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-            <input type="checkbox" v-model="project.burnOptions.cleanupIso" class="accent-blue-500" />
-            {{ t('burn.cleanupIso') }}
-          </label>
         </div>
 
         <!-- Подсказка мультисессии -->

@@ -19,14 +19,13 @@ tools: Read, Glob, Grep, Bash, WebSearch, WebFetch
 - **Frontend**: Vue3 (Composition API, `<script setup>`), Pinia 3, Vue Router 4, Tailwind CSS v4, reka-ui, lucide-vue-next
 - **Сборка**: Task (Taskfile.yml), Yarn, wails3 CLI
 - **ОС**: Только Linux
-- **Зависимости**: xorriso 1.5.6+ (обязателен), mkisofs/cdrtools (опционален)
+- **Зависимости**: xorriso 1.5.6+ (обязателен)
 
 ## Структура проекта
 ```
 main.go              — Точка входа
 pkg/models/          — Структуры данных
 pkg/xorriso/         — Интеграция с xorriso subprocess
-pkg/mkisofs/         — Интеграция mkisofs для UDF
 services/            — 4 Wails-сервиса (device, project, burn, settings)
 frontend/src/
 ├── stores/          — Pinia stores

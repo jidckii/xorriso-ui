@@ -93,7 +93,6 @@
 | `burnMode` | string | `"auto"` | Режим записи: `"auto"`, `"DAO"` (Disc-At-Once), `"TAO"` (Track-At-Once) |
 | `padding` | number | `300` | Количество секторов отступа в конце записи (для совместимости) |
 | `multisession` | boolean | `false` | Мультисессия — позволяет дописывать данные на диск позднее |
-| `cleanupIso` | boolean | `true` | Удалить временный ISO-файл после успешной записи |
 
 ### Пояснения
 
@@ -163,8 +162,7 @@
     "eject": true,
     "burnMode": "auto",
     "padding": 300,
-    "multisession": false,
-    "cleanupIso": true
+    "multisession": false
   },
   "createdAt": "2025-01-15T10:30:00Z",
   "updatedAt": "2025-03-08T14:22:15Z"
@@ -203,9 +201,8 @@
 ### Запись диска
 
 1. Проект передаётся сервису записи, который:
-   - Создаёт временный ISO-образ из `entries` с параметрами `isoOptions`
-   - Записывает ISO на диск с параметрами `burnOptions`
-   - Опционально верифицирует и удаляет временный ISO
+   - Строит ISO в памяти xorriso из `entries` с параметрами `isoOptions` и записывает на диск с параметрами `burnOptions`
+   - Опционально верифицирует записанные данные
 
 ## Версионирование
 

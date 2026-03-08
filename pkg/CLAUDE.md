@@ -27,13 +27,6 @@ This file provides guidance to Claude Code for Go backend development in xorriso
   - Цепочка: `NewCommandBuilder().Device(path).VolumeID(id).Map(src, dst).Commit()`
 - **progress.go**: Парсинг UPDATE строк из stderr xorriso → `Progress{Percent, Speed, Written, ETA}`
 
-### pkg/mkisofs/
-
-Опциональная интеграция mkisofs для создания ISO с UDF:
-
-- **executor.go**: `Executor` с `BuildISO(ctx, opts, progressFn)` — создаёт ISO, парсит `N% done` из stderr
-- `FileMappingsFromEntries()` — конвертирует `[]FileEntry` в graft-points для mkisofs
-
 ## Сервисы (services/)
 
 Каждый сервис реализует Wails3 lifecycle: `ServiceName()`, `ServiceStartup()`, `ServiceShutdown()`.
@@ -57,10 +50,9 @@ This file provides guidance to Claude Code for Go backend development in xorriso
 ### BurnService
 
 - `StartBurn(project)` — основной flow:
-  1. Создание временного ISO через mkisofs (если UDF) или xorriso
-  2. Запись ISO на диск через xorriso с streaming прогрессом
-  3. Опциональная верификация
-  4. Emit событий: `burn:progress`, `burn:state-changed`, `burn:complete`
+  1. Построение ISO в памяти xorriso (включая UDF через `-udf on`) и запись на диск с streaming прогрессом
+  2. Опциональная верификация
+  3. Emit событий: `burn:progress`, `burn:state-changed`, `burn:complete`
 - `CancelBurn()` — отмена через context cancellation
 - `BlankDisc()`, `FormatDisc()` — подготовка RW-медиа
 

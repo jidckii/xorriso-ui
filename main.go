@@ -5,7 +5,6 @@ import (
 	"log"
 	"os/exec"
 
-	"xorriso-ui/pkg/mkisofs"
 	"xorriso-ui/pkg/xorriso"
 	"xorriso-ui/services"
 
@@ -28,22 +27,13 @@ func main() {
 
 	executor := xorriso.NewExecutor(xorrisoPath)
 
-	// mkisofs is optional — needed for UDF support
-	var mkisofsExec *mkisofs.Executor
-	if mkisofsPath, err := exec.LookPath("mkisofs"); err == nil {
-		mkisofsExec = mkisofs.NewExecutor(mkisofsPath)
-		log.Printf("mkisofs found at %s — UDF support enabled", mkisofsPath)
-	} else {
-		log.Println("mkisofs not found — UDF support disabled. Install cdrtools for UDF: sudo zypper install cdrtools")
-	}
-
 	app := application.New(application.Options{
 		Name:        "xorriso-ui",
 		Description: "Modern disc burning GUI",
 		Services: []application.Service{
 			application.NewService(services.NewDeviceService(executor)),
 			application.NewService(services.NewProjectService()),
-			application.NewService(services.NewBurnService(executor, mkisofsExec)),
+			application.NewService(services.NewBurnService(executor)),
 			application.NewService(services.NewSettingsService(executor)),
 		},
 		Assets: application.AssetOptions{

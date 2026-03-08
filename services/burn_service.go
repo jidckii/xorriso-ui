@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"xorriso-ui/pkg/mkisofs"
 	"xorriso-ui/pkg/models"
 	"xorriso-ui/pkg/xorriso"
 
@@ -23,19 +22,17 @@ const (
 )
 
 type BurnService struct {
-	executor        xorriso.Runner
-	mkisofsExecutor mkisofs.ISOBuilder
-	mu              sync.Mutex
-	currentJob      *models.BurnJob
-	cancelFn        context.CancelFunc
-	emitEvent       func(name string, data ...any)
+	executor   xorriso.Runner
+	mu         sync.Mutex
+	currentJob *models.BurnJob
+	cancelFn   context.CancelFunc
+	emitEvent  func(name string, data ...any)
 }
 
-func NewBurnService(executor xorriso.Runner, mkisofsExecutor mkisofs.ISOBuilder) *BurnService {
+func NewBurnService(executor xorriso.Runner) *BurnService {
 	return &BurnService{
-		executor:        executor,
-		mkisofsExecutor: mkisofsExecutor,
-		emitEvent:       defaultEmitEvent,
+		executor:  executor,
+		emitEvent: defaultEmitEvent,
 	}
 }
 
@@ -43,11 +40,6 @@ func defaultEmitEvent(name string, data ...any) {
 	if app := application.Get(); app != nil {
 		app.Event.Emit(name, data...)
 	}
-}
-
-// MkisofsAvailable returns true if mkisofs binary is available
-func (s *BurnService) MkisofsAvailable() bool {
-	return s.mkisofsExecutor != nil
 }
 
 // CheckDiskSpace checks if there's enough space on the filesystem containing path
@@ -194,6 +186,7 @@ func (s *BurnService) buildISOCommand(cmd *xorriso.CommandBuilder, project *mode
 
 	cmd.RockRidge(project.ISOOptions.RockRidge)
 	cmd.Joliet(project.ISOOptions.Joliet)
+	cmd.UDF(project.ISOOptions.UDF)
 
 	if project.ISOOptions.HFSPlus {
 		cmd.HFSPlus(true)

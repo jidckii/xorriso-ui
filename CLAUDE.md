@@ -11,7 +11,7 @@ GUI для записи CD/DVD/Blu-ray/BDXL дисков. Backend — Go + xorri
 - **Backend**: Go 1.26+, Wails3 v3.0.0-alpha.74
 - **Frontend**: Vue3 (`<script setup>`), Pinia 3, Vue Router 4 (hash mode), Tailwind CSS v4, vue-i18n, reka-ui, lucide-vue-next
 - **Сборка**: Task (Taskfile.yml), Yarn, wails3 CLI
-- **Зависимости ОС**: xorriso 1.5.6+ (обязателен), mkisofs/cdrtools (опционален, для UDF)
+- **Зависимости ОС**: xorriso 1.5.6+ (обязателен)
 
 ## Команды разработки
 
@@ -65,7 +65,6 @@ Go Service → app.Event.Emit() → Wails Events → Events.On() в store → re
 main.go              — Точка входа: проверка xorriso, регистрация 4 сервисов, создание окна
 pkg/models/          — Структуры данных (Device, Project, BurnJob, события)
 pkg/xorriso/         — Интеграция с xorriso subprocess (-pkt_output on, парсинг R:/I:/M:)
-pkg/mkisofs/         — Опциональная интеграция mkisofs для UDF
 services/            — 4 Wails-сервиса (device, project, burn, settings)
 ```
 

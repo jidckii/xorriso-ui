@@ -49,6 +49,12 @@ func (b *CommandBuilder) Joliet(on bool) *CommandBuilder {
 	}
 	return b.add("-joliet", "off")
 }
+func (b *CommandBuilder) UDF(on bool) *CommandBuilder {
+	if on {
+		return b.add("-udf", "on")
+	}
+	return b.add("-udf", "off")
+}
 func (b *CommandBuilder) ISOLevel(level int) *CommandBuilder {
 	return b.add("-iso_level", strconv.Itoa(level))
 }
@@ -117,12 +123,6 @@ func (b *CommandBuilder) Commit() *CommandBuilder { return b.add("-commit") }
 func (b *CommandBuilder) Eject(which string) *CommandBuilder {
 	return b.add("-eject", which)
 }
-
-// cdrecord emulation mode
-func (b *CommandBuilder) CdrecordMode() *CommandBuilder              { return b.add("-as", "cdrecord") }
-func (b *CommandBuilder) CdrecordDev(dev string) *CommandBuilder     { return b.add("dev=" + dev) }
-func (b *CommandBuilder) CdrecordSpeed(speed string) *CommandBuilder { return b.add("speed=" + speed) }
-func (b *CommandBuilder) Verbose() *CommandBuilder                   { return b.add("-v") }
 
 // Arg adds a raw argument
 func (b *CommandBuilder) Arg(arg string) *CommandBuilder { return b.add(arg) }

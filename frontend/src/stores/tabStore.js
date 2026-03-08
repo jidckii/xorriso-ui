@@ -35,7 +35,6 @@ function createProjectData(name = 'DISC_1', volumeId = 'DISC_1') {
       streamRecording: false,
       multisession: false,
       padding: 0,
-      cleanupIso: true,
     },
     createdAt: null,
     updatedAt: null,

@@ -1,27 +1,18 @@
 # Пайплайн записи диска
 
-Описание процесса преобразования проекта (`.xorriso-project`) в команды xorriso/mkisofs и записи на физический диск.
+Описание процесса преобразования проекта (`.xorriso-project`) в команды xorriso и записи на физический диск.
 
 ## Общая схема
 
 ```
 Project (.xorriso-project)
     │
-    ├─ UDF выключен ──→ Native mode (только xorriso)
-    │                      xorriso строит ISO в памяти и сразу пишет на диск
-    │
-    └─ UDF включён ───→ UDF mode (mkisofs + xorriso)
-                           Фаза 1: mkisofs создаёт временный ISO-файл
-                           Фаза 2: xorriso записывает ISO на диск
+    └─→ xorriso native mode
+           xorriso строит ISO в памяти и сразу пишет на диск
+           UDF включается через -udf on (libisofs)
 ```
 
-Выбор режима определяется полем `isoOptions.udf` в проекте.
-
-## Native mode (UDF выключен)
-
-Используется только xorriso. ISO-образ создаётся в памяти и сразу записывается на диск — без промежуточного файла.
-
-### Цепочка вызовов
+## Цепочка вызовов
 
 ```
 BurnService.StartBurn()
@@ -32,11 +23,11 @@ BurnService.StartBurn()
     → (опционально) извлечение диска
 ```
 
-### Построение команды xorriso
+## Построение команды xorriso
 
 Функция `buildISOCommand()` использует fluent API `CommandBuilder` для трансляции полей проекта в аргументы xorriso.
 
-#### Маппинг полей Project → аргументов xorriso
+### Маппинг полей Project → аргументов xorriso
 
 | Поле проекта | Аргумент xorriso | Пример |
 |---|---|---|
@@ -45,6 +36,7 @@ BurnService.StartBurn()
 | `isoOptions.isoLevel` | `-iso_level` | `-iso_level 3` |
 | `isoOptions.rockRidge` | `-rockridge on` | `-rockridge on` |
 | `isoOptions.joliet` | `-joliet on` | `-joliet on` |
+| `isoOptions.udf` | `-udf on` | `-udf on` |
 | `isoOptions.hfsPlus` | `-hfsplus on` | `-hfsplus on` |
 | `isoOptions.zisofs` | `-zisofs level=9:...` | Сжатие zlib |
 | `isoOptions.md5` | `-md5 on` | `-md5 on` |
@@ -60,7 +52,7 @@ BurnService.StartBurn()
 | устройство | `-dev` | `-dev /dev/sr0` |
 | — | `-commit` | Запуск записи |
 
-#### Пример итоговой команды
+### Пример итоговой команды
 
 ```bash
 xorriso \
@@ -70,6 +62,7 @@ xorriso \
   -iso_level 3 \
   -rockridge on \
   -joliet on \
+  -udf on \
   -md5 on \
   -map /home/user/Documents /Documents \
   -map /home/user/Photos/vacation.jpg /Photos/vacation.jpg \
@@ -79,7 +72,7 @@ xorriso \
   -commit
 ```
 
-#### Пример: создание ISO-файла (без записи на диск)
+### Пример: создание ISO-файла (без записи на диск)
 
 При создании ISO вместо `-dev` и `-commit` используется `-outdev` с путём к файлу:
 
@@ -90,11 +83,12 @@ xorriso \
   -volid "BACKUP_2025" \
   -iso_level 3 \
   -rockridge on \
+  -udf on \
   -map /home/user/Documents /Documents \
   -commit
 ```
 
-### Верификация
+## Верификация
 
 Если включена опция `burnOptions.verify`, после записи выполняется проверка:
 
@@ -107,107 +101,6 @@ xorriso \
 ```
 
 xorriso перечитывает записанные данные и проверяет контрольные суммы.
-
-## UDF mode (UDF включён)
-
-Для UDF-дисков (Blu-ray, BDXL, DVD с UDF) используется двухфазный процесс: mkisofs для создания ISO, xorriso для записи.
-
-Причина: xorriso имеет ограниченную поддержку UDF, а mkisofs (из cdrtools) поддерживает UDF полноценно.
-
-### Цепочка вызовов
-
-```
-BurnService.StartBurn()
-  → горутина runBurnUDF()
-    → Фаза 1: проверка свободного места на диске хоста
-    → Фаза 1: mkisofs.BuildISO()  — создание временного ISO
-    → Фаза 2: xorriso (cdrecord mode) — запись ISO на диск
-    → (опционально) верификация
-    → (опционально) извлечение диска
-    → (опционально) удаление временного ISO
-```
-
-### Фаза 1: создание ISO через mkisofs
-
-#### Маппинг полей Project → аргументов mkisofs
-
-| Поле проекта | Аргумент mkisofs | Пример |
-|---|---|---|
-| — | `-udf` | Всегда включён в UDF mode |
-| `volumeId` | `-V` | `-V PHOTOS_2025` |
-| `isoOptions.isoLevel` | `-iso-level` | `-iso-level 3` |
-| `isoOptions.rockRidge` | `-r` | Rock Ridge с исправленными правами |
-| `isoOptions.joliet` | `-J` | Joliet расширение |
-| `isoOptions.hfsPlus` | `-hfsplus` | HFS+ расширение |
-| `isoOptions.zisofs` | `-z` | Сжатие zisofs |
-| `entries[]` | `-graft-points` | Режим graft-points для маппинга путей |
-| `entries[].destPath=sourcePath` | (позиционные) | `/Photos/img.jpg=/home/user/img.jpg` |
-| — | `-o` | `-o /tmp/xorriso-ui-XXXXX.iso` |
-
-#### Формат graft-points
-
-Файлы из `entries` преобразуются функцией `FileMappingsFromEntries()`:
-
-```
-destPath=sourcePath
-```
-
-Папки (`isDir: true`) пропускаются — mkisofs создаёт их автоматически из путей файлов.
-
-#### Пример команды mkisofs
-
-```bash
-mkisofs \
-  -udf \
-  -r \
-  -J \
-  -V "PHOTOS_2025" \
-  -iso-level 3 \
-  -graft-points \
-  -o /tmp/xorriso-ui-abc123.iso \
-  /Documents/report.pdf=/home/user/Documents/report.pdf \
-  /Photos/vacation.jpg=/home/user/Photos/vacation.jpg
-```
-
-#### Парсинг прогресса mkisofs
-
-mkisofs выводит прогресс в stderr в формате:
-
-```
- 10.00% done, estimate finish Sat Mar  8 15:30:00 2025
- 20.01% done, estimate finish Sat Mar  8 15:30:05 2025
-```
-
-Парсер использует regex `(\d+\.\d+)%\s+done` и кастомный сплиттер `scanMkisofsLines`, обрабатывающий `\r`-delimited строки (mkisofs использует `\r` для обновления прогресса в терминале).
-
-### Фаза 2: запись ISO через xorriso (cdrecord mode)
-
-xorriso запускается в режиме совместимости с cdrecord:
-
-```bash
-xorriso \
-  -as cdrecord \
-  -v \
-  dev=/dev/sr0 \
-  speed=8x \
-  /tmp/xorriso-ui-abc123.iso
-```
-
-#### Маппинг burnOptions → аргументов cdrecord mode
-
-| Поле проекта | Аргумент | Пример |
-|---|---|---|
-| устройство | `dev=` | `dev=/dev/sr0` |
-| `burnOptions.speed` | `speed=` | `speed=8x` |
-| `burnOptions.dummyMode` | `-dummy` | Симуляция |
-| `burnOptions.streamRecording` | `stream_recording=on` | Потоковая запись |
-| `burnOptions.burnMode` | `-dao` / `-tao` | Режим записи |
-| `burnOptions.padding` | `padsize=` | `padsize=300s` |
-| `burnOptions.closeDisc` | `-close` | Финализация |
-
-### Очистка
-
-Если `burnOptions.cleanupIso: true`, временный ISO-файл удаляется после успешной записи. При ошибке файл сохраняется для диагностики.
 
 ## Subprocess и парсинг вывода
 
@@ -274,29 +167,17 @@ I:UPDATE: 45.2% done, speed= 6.1xBD, fifo 94%, buf  50%, remaining 0:03:22
 
 ## Фазы прогресса
 
-Фронтенд получает события с фазой и процентом. Фазы зависят от режима:
-
-### Native mode
+Фронтенд получает события с фазой и процентом:
 
 | Фаза | Описание |
 |------|----------|
 | `writing` | Запись на диск |
 | `verifying` | Верификация (если включена) |
 
-### UDF mode
-
-| Фаза | Описание |
-|------|----------|
-| `creating_iso` | Создание ISO через mkisofs |
-| `writing` | Запись ISO на диск через xorriso |
-| `verifying` | Верификация (если включена) |
-
 ## Обработка ошибок
 
-- **Нет места на хосте** (UDF mode) — перед созданием ISO проверяется свободное место на разделе, где будет временный файл
 - **Отмена записи** — `CancelBurn()` отправляет сигнал отмены через `context.Cancel()`, subprocess завершается
 - **Ошибка xorriso** — ненулевой exit code, ошибки из канала `I:`, результат передаётся на фронтенд
-- **Ошибка mkisofs** — ненулевой exit code, stderr содержит описание ошибки
 
 ## Управление записью
 

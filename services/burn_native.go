@@ -13,13 +13,6 @@ func (s *BurnService) runBurn(ctx context.Context, project *models.Project, devi
 	startTime := time.Now()
 	s.updateState(jobID, models.BurnStateWriting)
 
-	// UDF mode: create ISO via mkisofs, then burn via xorriso cdrecord mode
-	if project.ISOOptions.UDF {
-		s.runBurnUDF(ctx, project, devicePath, opts, jobID, startTime)
-		return
-	}
-
-	// Non-UDF: existing native mode logic
 	// Формируем команду xorriso
 	cmd := xorriso.NewCommand()
 	cmd.Device(devicePath)
@@ -172,13 +165,6 @@ func (s *BurnService) runCreateISO(ctx context.Context, project *models.Project,
 	startTime := time.Now()
 	s.updateState(jobID, models.BurnStateCreatingISO)
 
-	// UDF mode: use mkisofs
-	if project.ISOOptions.UDF {
-		s.runCreateISOWithMkisofs(ctx, project, outputPath, jobID, startTime)
-		return
-	}
-
-	// Non-UDF: existing xorriso native mode
 	cmd := xorriso.NewCommand()
 	cmd.StdioOutDevice(outputPath)
 

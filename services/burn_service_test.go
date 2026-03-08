@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"slices"
@@ -9,22 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"xorriso-ui/pkg/mkisofs"
 	"xorriso-ui/pkg/models"
 	"xorriso-ui/pkg/xorriso"
 )
-
-// mockISOBuilder реализует mkisofs.ISOBuilder для тестов
-type mockISOBuilder struct {
-	BuildISOFn func(ctx context.Context, opts mkisofs.BuildOpts, progressFn mkisofs.ProgressFn) error
-}
-
-func (m *mockISOBuilder) BuildISO(ctx context.Context, opts mkisofs.BuildOpts, progressFn mkisofs.ProgressFn) error {
-	if m.BuildISOFn != nil {
-		return m.BuildISOFn(ctx, opts, progressFn)
-	}
-	return nil
-}
 
 // noopEmit заглушка для emitEvent
 func noopEmit(name string, data ...any) {}
@@ -34,7 +20,7 @@ func TestCheckDiskSpace(t *testing.T) {
 	tmpFile := filepath.Join(tmpDir, "test.iso")
 	os.WriteFile(tmpFile, []byte("test"), 0644)
 
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	// Запрашиваем 1 байт свободного места -- должно хватить
@@ -51,7 +37,7 @@ func TestCheckDiskSpace(t *testing.T) {
 }
 
 func TestStartBurn_AlreadyInProgress(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	// Устанавливаем текущий job в состоянии writing
@@ -78,7 +64,7 @@ func TestStartBurn_AlreadyInProgress(t *testing.T) {
 }
 
 func TestCancelBurn_NoJob(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	err := svc.CancelBurn("some-id")
@@ -88,7 +74,7 @@ func TestCancelBurn_NoJob(t *testing.T) {
 }
 
 func TestCancelBurn_WrongID(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	svc.currentJob = &models.BurnJob{
@@ -106,7 +92,7 @@ func TestCancelBurn_WrongID(t *testing.T) {
 }
 
 func TestGetJobStatus_NoJob(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	_, err := svc.GetJobStatus("some-id")
@@ -119,7 +105,7 @@ func TestGetJobStatus_NoJob(t *testing.T) {
 }
 
 func TestGetJobStatus_Found(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	job := &models.BurnJob{
@@ -141,23 +127,9 @@ func TestGetJobStatus_Found(t *testing.T) {
 	}
 }
 
-func TestMkisofsAvailable_True(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, &mockISOBuilder{})
-	if !svc.MkisofsAvailable() {
-		t.Error("MkisofsAvailable should return true when mkisofsExecutor is set")
-	}
-}
-
-func TestMkisofsAvailable_False(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
-	if svc.MkisofsAvailable() {
-		t.Error("MkisofsAvailable should return false when mkisofsExecutor is nil")
-	}
-}
-
 func TestBuildISOCommand(t *testing.T) {
 	runner := &mockRunner{}
-	svc := NewBurnService(runner, nil)
+	svc := NewBurnService(runner)
 	svc.emitEvent = noopEmit
 
 	project := &models.Project{
@@ -205,7 +177,7 @@ func TestBuildISOCommand(t *testing.T) {
 }
 
 func TestBuildISOCommand_Minimal(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	project := &models.Project{
@@ -234,8 +206,52 @@ func TestBuildISOCommand_Minimal(t *testing.T) {
 	}
 }
 
+func TestBuildISOCommand_UDF(t *testing.T) {
+	svc := NewBurnService(&mockRunner{})
+	svc.emitEvent = noopEmit
+
+	project := &models.Project{
+		Entries: []models.FileEntry{
+			{SourcePath: "/tmp/data", DestPath: "/data"},
+		},
+		ISOOptions: models.ISOOptions{
+			UDF: true,
+		},
+	}
+
+	cmd := xorriso.NewCommand()
+	svc.buildISOCommand(cmd, project)
+	args := cmd.Build()
+
+	if !containsSequence(args, "-udf", "on") {
+		t.Errorf("expected -udf on in args, got: %s", joinArgs(args))
+	}
+}
+
+func TestBuildISOCommand_UDFOff(t *testing.T) {
+	svc := NewBurnService(&mockRunner{})
+	svc.emitEvent = noopEmit
+
+	project := &models.Project{
+		Entries: []models.FileEntry{
+			{SourcePath: "/tmp/data", DestPath: "/data"},
+		},
+		ISOOptions: models.ISOOptions{
+			UDF: false,
+		},
+	}
+
+	cmd := xorriso.NewCommand()
+	svc.buildISOCommand(cmd, project)
+	args := cmd.Build()
+
+	if !containsSequence(args, "-udf", "off") {
+		t.Errorf("expected -udf off in args, got: %s", joinArgs(args))
+	}
+}
+
 func TestGetBurnCommand_Full(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	project := &models.Project{
@@ -298,7 +314,7 @@ func TestGetBurnCommand_Full(t *testing.T) {
 }
 
 func TestGetBurnCommand_Minimal(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	project := &models.Project{
@@ -332,7 +348,7 @@ func TestGetBurnCommand_Minimal(t *testing.T) {
 }
 
 func TestGetBurnCommand_Multisession(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	project := &models.Project{
@@ -358,7 +374,7 @@ func TestGetBurnCommand_Multisession(t *testing.T) {
 }
 
 func TestGetBurnCommand_NilProject(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	_, err := svc.GetBurnCommand(nil, "/dev/sr0", models.BurnOptions{})
@@ -368,7 +384,7 @@ func TestGetBurnCommand_NilProject(t *testing.T) {
 }
 
 func TestGetBurnCommand_EmptyDevice(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	project := &models.Project{
@@ -382,7 +398,7 @@ func TestGetBurnCommand_EmptyDevice(t *testing.T) {
 }
 
 func TestGetBurnCommand_NoEntries(t *testing.T) {
-	svc := NewBurnService(&mockRunner{}, nil)
+	svc := NewBurnService(&mockRunner{})
 	svc.emitEvent = noopEmit
 
 	project := &models.Project{

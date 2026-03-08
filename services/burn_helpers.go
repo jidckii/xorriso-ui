@@ -16,15 +16,6 @@ func (s *BurnService) updateState(jobID string, state models.BurnState) {
 	s.emitEvent(models.EventBurnStateChanged, string(state))
 }
 
-// updatePhase updates the current job's progress phase
-func (s *BurnService) updatePhase(jobID string, phase string) {
-	s.mu.Lock()
-	if s.currentJob != nil && s.currentJob.ID == jobID {
-		s.currentJob.Progress.Phase = phase
-	}
-	s.mu.Unlock()
-}
-
 func (s *BurnService) finishJob(jobID string, state models.BurnState, result *models.BurnResult, errMsg string) {
 	s.mu.Lock()
 	if s.currentJob != nil && s.currentJob.ID == jobID {

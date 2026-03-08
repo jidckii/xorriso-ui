@@ -19,7 +19,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash, Agent, WebFetch, WebSearch
 - **Frontend**: Vue3, Pinia 3, Tailwind CSS v4
 - **Сборка**: Task (Taskfile.yml), Yarn, wails3 CLI
 - **Целевая ОС**: Только Linux
-- **Зависимости ОС**: xorriso 1.5.6+ (обязателен), mkisofs/cdrtools (опционален)
+- **Зависимости ОС**: xorriso 1.5.6+ (обязателен)
 
 ## Текущая инфраструктура сборки
 ```
@@ -65,7 +65,7 @@ golangci-lint run ./...                   # Линтинг Go
 - DEB (Debian, Ubuntu)
 - PKG (Archlinux)
 - AppImage, Flatpak
-- Зависимости: xorriso, mkisofs, ffmpeg, GTK/WebKit (для Wails3)
+- Зависимости: xorriso, ffmpeg, GTK/WebKit (для Wails3)
 
 ### Релизы
 - Семантическое версионирование

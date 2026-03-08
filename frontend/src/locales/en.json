@@ -66,8 +66,6 @@
     "close": "Close",
     "multisession": "Keep disc open for more sessions",
     "multisessionHint": "The disc will not be finalized, allowing additional sessions to be written later.",
-    "cleanupIso": "Delete temporary ISO after successful burn",
-    "cleanupIsoHint": "When UDF is enabled, a temporary ISO is created before burning. This option removes it after successful write.",
     "simpleMode": "Simple",
     "expertMode": "Expert",
     "discClosed": "Disc is closed",

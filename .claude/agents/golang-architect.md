@@ -2,7 +2,7 @@
 name: golang-architect
 description: >
   Go-архитектор проекта xorriso-ui. Используй для разработки, проектирования,
-  ревью и отладки Go-кода: сервисы Wails3, интеграция с xorriso/mkisofs,
+  ревью и отладки Go-кода: сервисы Wails3, интеграция с xorriso,
   модели данных, тестирование (TDD).
 model: opus
 color: cyan
@@ -18,14 +18,12 @@ tools: Read, Write, Edit, Glob, Grep, Bash, Agent, WebFetch, WebSearch, LSP
 - **Go 1.26+**
 - **Wails3** v3.0.0-alpha.64
 - **xorriso** subprocess — основной движок записи дисков
-- **mkisofs/cdrtools** — опционально для UDF
 
 ## Структура Go
 ```
 main.go              — Точка входа: проверка xorriso, регистрация сервисов, создание окна
 pkg/models/          — Структуры данных (Device, Project, BurnJob, события)
 pkg/xorriso/         — Интеграция с xorriso (-pkt_output on, парсинг R:/I:/M:)
-pkg/mkisofs/         — Интеграция mkisofs для UDF
 services/            — 4 Wails-сервиса (device, project, burn, settings)
 ```
 

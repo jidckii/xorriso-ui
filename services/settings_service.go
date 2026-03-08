@@ -115,11 +115,10 @@ func (s *SettingsService) GetXorrisoVersion() (string, error) {
 	return s.executor.Version(ctx)
 }
 
-// GetToolsInfo returns information about required external tools (xorriso, mkisofs)
+// GetToolsInfo returns information about required external tools (xorriso)
 func (s *SettingsService) GetToolsInfo() ([]ToolInfo, error) {
 	tools := []ToolInfo{
 		{Name: "xorriso"},
-		{Name: "mkisofs"},
 	}
 
 	for i := range tools {

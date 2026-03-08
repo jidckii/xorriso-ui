@@ -44,5 +44,4 @@ type BurnOptions struct {
 	BurnMode        string `json:"burnMode"`
 	Padding         int    `json:"padding"`
 	Multisession    bool   `json:"multisession"`
-	CleanupISO      bool   `json:"cleanupIso"`
 }
