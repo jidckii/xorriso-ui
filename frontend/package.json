@@ -7,7 +7,9 @@
     "dev": "vite",
     "build:dev": "vite build --minify false --mode development",
     "build": "vite build --mode production",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@wailsio/runtime": "3.0.0-alpha.79",
@@ -20,8 +22,14 @@
     "vue-router": "4"
   },
   "devDependencies": {
+    "@pinia/testing": "^1.0.3",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/addon-interactions": "^8.6.14",
+    "@storybook/blocks": "^8.6.14",
+    "@storybook/vue3-vite": "^8.6.14",
     "@tailwindcss/vite": "^4.1.18",
     "@vitejs/plugin-vue": "^4.0.0",
+    "storybook": "^8.6.14",
     "tailwindcss": "^4.1.18",
     "vite": "^5.0.0"
   }

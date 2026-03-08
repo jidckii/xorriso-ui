@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatBytes } from '../../composables/useFormatBytes'
+import { useMediaStatus } from '../../composables/useMediaStatus'
 
 const { t } = useI18n()
 
@@ -15,32 +17,7 @@ const props = defineProps({
   },
 })
 
-const statusColor = computed(() => {
-  const map = {
-    blank: 'bg-green-500',
-    appendable: 'bg-yellow-500',
-    closed: 'bg-red-500',
-    unknown: 'bg-gray-500',
-  }
-  return map[props.status]
-})
-
-const statusLabel = computed(() => {
-  const map = {
-    blank: t('device.blank'),
-    appendable: t('device.appendable'),
-    closed: t('device.closed'),
-    unknown: t('device.unknown'),
-  }
-  return map[props.status]
-})
-
-function formatBytes(bytes) {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i]
-}
+const { statusDot: statusColor, statusLabel } = useMediaStatus(() => props.status)
 </script>
 
 <template>

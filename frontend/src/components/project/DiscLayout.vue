@@ -2,13 +2,12 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { TreeRoot, TreeItem } from 'reka-ui'
-import { ChevronRight } from 'lucide-vue-next'
-import FileIcon from '../ui/FileIcon.vue'
 import PanelHeader from '../ui/PanelHeader.vue'
-import ImagePreviewTooltip from '../ui/ImagePreviewTooltip.vue'
+import DiscLayoutTree from './DiscLayoutTree.vue'
+import DiscLayoutToolbar from './DiscLayoutToolbar.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTabStore } from '../../stores/tabStore'
+import { formatBytes } from '../../composables/useFormatBytes'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -18,7 +17,7 @@ const tabStore = useTabStore()
 const currentProject = computed(() => tabStore.activeProject)
 const tabId = computed(() => tabStore.activeTabId)
 
-// Build tree from flat entries
+// Построение дерева из плоского списка записей
 const treeItems = computed(() => {
   const entries = currentProject.value?.entries || []
   if (entries.length === 0) return []
@@ -58,12 +57,8 @@ function buildTreeFromEntries(entries) {
 
 const expanded = ref([])
 
-// Manual selection with parent-child propagation
+// Ручное управление выделением с пробросом на дочерние элементы
 const selectedKeys = ref(new Set())
-
-function isItemSelected(key) {
-  return selectedKeys.value.has(key)
-}
 
 function toggleItemSelection(item) {
   const selecting = !selectedKeys.value.has(item._key)
@@ -74,7 +69,7 @@ function toggleItemSelection(item) {
     selectedKeys.value.delete(item._key)
   }
 
-  // Propagate to children
+  // Пробрасываем выбор на дочерние элементы
   if (item.children && item.children.length > 0) {
     propagateSelection(item.children, selecting)
   }
@@ -113,7 +108,7 @@ async function removeSelectedFromProject() {
   selectedKeys.value = new Set()
 }
 
-// Select all / deselect all
+// Выделить все / снять выделение
 function selectAllItems(items) {
   for (const item of items) {
     selectedKeys.value.add(item._key)
@@ -154,50 +149,9 @@ function goToBurn() {
   router.push('/burn')
 }
 
-function formatBytes(bytes) {
-  return projectStore.formatBytes(bytes)
-}
-
-function getKey(item) {
-  return item._key || item.destPath
-}
-
-function getChildren(item) {
-  if (!item.children || item.children.length === 0) return undefined
-  return item.children
-}
-
-// Image preview tooltip
-const previewVisible = ref(false)
-const previewX = ref(0)
-const previewY = ref(0)
-const previewSourcePath = ref('')
-
-const imageExts = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'])
-
-function isImageFile(name) {
-  if (!name) return false
-  const dot = name.lastIndexOf('.')
-  if (dot < 0) return false
-  return imageExts.has(name.substring(dot).toLowerCase())
-}
-
-function onItemMouseEnter(e, item) {
-  if (item.isDir || !item.sourcePath || !isImageFile(item.name)) return
-  previewSourcePath.value = item.sourcePath
-  previewX.value = e.clientX
-  previewY.value = e.clientY
-  previewVisible.value = true
-}
-
-function onItemMouseMove(e) {
-  previewX.value = e.clientX
-  previewY.value = e.clientY
-}
-
-function onItemMouseLeave() {
-  previewVisible.value = false
-}
+const canBurn = computed(() => {
+  return currentProject.value && currentProject.value.entries.length > 0
+})
 </script>
 
 <template>
@@ -218,9 +172,9 @@ function onItemMouseLeave() {
       </template>
     </PanelHeader>
 
-    <!-- Tree content -->
+    <!-- Содержимое дерева -->
     <div class="flex-1 overflow-y-auto">
-      <!-- Empty state -->
+      <!-- Пустое состояние -->
       <div
         v-if="!currentProject?.entries?.length"
         class="flex flex-col items-center justify-center h-full text-gray-500 py-12"
@@ -232,107 +186,25 @@ function onItemMouseLeave() {
         <p class="text-sm">{{ t('common.addFilesFromBrowser') }}</p>
       </div>
 
-      <!-- File tree -->
-      <TreeRoot
+      <!-- Дерево файлов -->
+      <DiscLayoutTree
         v-else
         :items="treeItems"
-        :get-key="getKey"
-        :get-children="getChildren"
         v-model:expanded="expanded"
-        class="w-full text-sm select-none"
-      >
-        <template #default="{ flattenItems }">
-          <TreeItem
-            v-for="item in flattenItems"
-            :key="item._id"
-            v-bind="item.bind"
-            class="flex items-center gap-1.5 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors outline-none"
-            :class="{ 'bg-blue-500/15': isItemSelected(item.value._key) }"
-            :style="{ paddingLeft: (item.level * 16 + 8) + 'px', paddingRight: '8px' }"
-            @click="toggleItemSelection(item.value)"
-            @mouseenter="onItemMouseEnter($event, item.value)"
-            @mousemove="onItemMouseMove"
-            @mouseleave="onItemMouseLeave"
-          >
-            <template #default="{ isExpanded }">
-              <!-- Expand chevron -->
-              <span class="w-4 h-4 flex items-center justify-center shrink-0">
-                <ChevronRight
-                  v-if="item.value.children?.length"
-                  :size="14"
-                  class="text-gray-500 transition-transform duration-150"
-                  :class="{ 'rotate-90': isExpanded }"
-                />
-              </span>
-
-              <!-- Selection checkbox -->
-              <input
-                type="checkbox"
-                :checked="isItemSelected(item.value._key)"
-                @click.stop="toggleItemSelection(item.value)"
-                class="w-3.5 h-3.5 accent-blue-600 shrink-0 cursor-pointer"
-              />
-
-              <!-- File/folder icon -->
-              <FileIcon
-                :name="item.value.name"
-                :is-dir="item.value.isDir"
-                :is-open="isExpanded"
-                :size="16"
-              />
-
-              <!-- Name -->
-              <span class="truncate flex-1 text-gray-800 dark:text-gray-200">
-                {{ item.value.name }}
-              </span>
-
-              <!-- Size -->
-              <span v-if="item.value.size" class="text-xs text-gray-500 shrink-0 ml-2">
-                {{ formatBytes(item.value.size) }}
-              </span>
-            </template>
-          </TreeItem>
-        </template>
-      </TreeRoot>
-
-      <!-- Image preview tooltip -->
-      <ImagePreviewTooltip
-        :file-path="previewSourcePath"
-        :visible="previewVisible"
-        :x="previewX"
-        :y="previewY"
+        :selected-keys="selectedKeys"
+        @toggle-selection="toggleItemSelection"
       />
     </div>
 
-    <!-- Toolbar -->
-    <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
-      <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          :checked="allSelected"
-          @change="allSelected ? deselectAll() : selectAll()"
-          class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"
-        />
-        {{ t('project.selectAll') }}
-      </label>
-      <button
-        @click="removeSelectedFromProject"
-        :disabled="selectedCount === 0"
-        class="px-3 py-1 text-xs font-medium rounded bg-red-600 hover:bg-red-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-      >
-        {{ t('project.remove') }}
-      </button>
-      <span class="text-xs text-gray-500">
-        {{ selectedCount }} {{ t('project.selected') }}
-      </span>
-      <span class="flex-1"></span>
-      <button
-        @click="goToBurn"
-        :disabled="!currentProject || currentProject.entries.length === 0"
-        class="px-4 py-1 text-xs font-medium rounded bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-      >
-        {{ t('burn.title') }}
-      </button>
-    </div>
+    <!-- Панель инструментов -->
+    <DiscLayoutToolbar
+      :all-selected="allSelected"
+      :selected-count="selectedCount"
+      :can-burn="canBurn"
+      @select-all="selectAll"
+      @deselect-all="deselectAll"
+      @remove-selected="removeSelectedFromProject"
+      @go-to-burn="goToBurn"
+    />
   </div>
 </template>

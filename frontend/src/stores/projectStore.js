@@ -16,6 +16,7 @@ import {
   GetFileProperties,
 } from '../../bindings/xorriso-ui/services/projectservice.js'
 import { useTabStore } from './tabStore'
+import { formatBytes } from '../composables/useFormatBytes'
 
 export const useProjectStore = defineStore('project', () => {
   const browseLoading = ref(false)
@@ -104,13 +105,6 @@ export const useProjectStore = defineStore('project', () => {
     } finally {
       browseLoading.value = false
     }
-  }
-
-  function formatBytes(bytes) {
-    if (bytes === 0) return '0 B'
-    const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-    const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`
   }
 
   async function getHomeDirectory() {

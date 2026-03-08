@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatBytes } from '../../composables/useFormatBytes'
 
 const { t } = useI18n()
 
@@ -66,12 +67,7 @@ function tickPosition(tickBytes) {
   return (tickBytes / maxBarBytes.value) * 100
 }
 
-function formatBytes(bytes) {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i]
-}
+
 </script>
 
 <template>

@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '../ui/Button.vue'
+import { formatBytes } from '../../composables/useFormatBytes'
+import { useMediaStatus } from '../../composables/useMediaStatus'
 
 const { t } = useI18n()
 
@@ -28,42 +30,7 @@ const usagePercent = computed(() => {
   return (props.device.capacityUsed / props.device.capacityTotal) * 100
 })
 
-const statusColor = computed(() => {
-  const map = {
-    blank: 'text-green-400',
-    appendable: 'text-yellow-400',
-    closed: 'text-red-400',
-    unknown: 'text-gray-600 dark:text-gray-400',
-  }
-  return map[props.device.mediaStatus] || 'text-gray-600 dark:text-gray-400'
-})
-
-const statusDot = computed(() => {
-  const map = {
-    blank: 'bg-green-500',
-    appendable: 'bg-yellow-500',
-    closed: 'bg-red-500',
-    unknown: 'bg-gray-500',
-  }
-  return map[props.device.mediaStatus] || 'bg-gray-500'
-})
-
-const statusLabel = computed(() => {
-  const map = {
-    blank: t('device.blank'),
-    appendable: t('device.appendable'),
-    closed: t('device.closed'),
-    unknown: t('device.unknown'),
-  }
-  return map[props.device.mediaStatus] || props.device.mediaStatus
-})
-
-function formatBytes(bytes) {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i]
-}
+const { statusColor, statusDot, statusLabel } = useMediaStatus(() => props.device.mediaStatus)
 </script>
 
 <template>

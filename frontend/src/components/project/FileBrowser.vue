@@ -1,13 +1,15 @@
 <script setup>
-import { ref, reactive, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowUp, Home, Usb, Eye, EyeOff, ExternalLink, Info, FolderPlus } from 'lucide-vue-next'
+import { ExternalLink, Info, FolderPlus } from 'lucide-vue-next'
 import FileBrowserItem from './FileBrowserItem.vue'
-import PanelHeader from '../ui/PanelHeader.vue'
+import FileBrowserToolbar from './FileBrowserToolbar.vue'
+import FileBrowserSelectionBar from './FileBrowserSelectionBar.vue'
 import ContextMenu from '../ui/ContextMenu.vue'
 import FilePropertiesModal from './FilePropertiesModal.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTabStore } from '../../stores/tabStore'
+import { formatBytes } from '../../composables/useFormatBytes'
 
 const { t } = useI18n()
 const projectStore = useProjectStore()
@@ -39,23 +41,17 @@ const filteredEntries = computed(() => {
   return entries.value.filter(e => !e.name.startsWith('.'))
 })
 
-// Editable path (Ctrl+L)
+// Редактируемый путь (Ctrl+L)
 const editingPath = ref(false)
 const pathInput = ref('')
-const pathInputRef = ref(null)
 
 function startEditPath() {
   pathInput.value = currentProject.value?.browsePath || '/'
   editingPath.value = true
-  nextTick(() => {
-    pathInputRef.value?.focus()
-    pathInputRef.value?.select()
-  })
 }
 
-function confirmPath() {
+function onConfirmPath(path) {
   editingPath.value = false
-  const path = pathInput.value.trim()
   if (path) {
     navigateTo(path)
   }
@@ -208,10 +204,6 @@ async function addSelectedToProject() {
   }
 }
 
-function formatBytes(bytes) {
-  return projectStore.formatBytes(bytes)
-}
-
 // Context menu
 const contextMenu = reactive({
   show: false,
@@ -311,79 +303,20 @@ watch(tabId, async () => {
 
 <template>
   <div class="flex flex-col h-full" @keydown="onKeydown" @contextmenu.prevent tabindex="-1">
-    <PanelHeader>
-      <template #row1>
-        <button
-          v-for="mp in mountPoints"
-          :key="mp.path"
-          @click="navigateTo(mp.path)"
-          class="flex items-center gap-1 px-2 py-0.5 text-xs rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
-          :class="{
-            'bg-blue-500/15 text-blue-600 dark:text-blue-400': currentProject?.browsePath?.startsWith(mp.path),
-            'text-gray-600 dark:text-gray-400': !currentProject?.browsePath?.startsWith(mp.path),
-          }"
-          :title="mp.path"
-        >
-          <Home v-if="mp.icon === 'home'" :size="12" />
-          <Usb v-else :size="12" />
-          <span>{{ mp.label }}</span>
-        </button>
-
-        <span class="flex-1" />
-
-        <button
-          @click="showHidden = !showHidden"
-          class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
-          :title="showHidden ? t('project.hideHidden') : t('project.showHidden')"
-        >
-          <Eye v-if="showHidden" :size="14" class="text-blue-500" />
-          <EyeOff v-else :size="14" class="text-gray-500" />
-        </button>
-      </template>
-
-      <template #row2>
-        <button
-          @click="goUp"
-          class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
-          :title="t('project.goUp')"
-        >
-          <ArrowUp :size="14" class="text-gray-600 dark:text-gray-400" />
-        </button>
-
-        <!-- Editable path input -->
-        <input
-          v-if="editingPath"
-          ref="pathInputRef"
-          v-model="pathInput"
-          @keydown.enter="confirmPath"
-          @keydown.escape="cancelEditPath"
-          @blur="cancelEditPath"
-          class="flex-1 ml-1 px-2 py-0.5 text-xs bg-white dark:bg-gray-900 border border-blue-500 rounded text-gray-800 dark:text-gray-200 outline-none"
-        />
-
-        <!-- Breadcrumb (click empty area to edit) -->
-        <div
-          v-else
-          class="flex items-center gap-0.5 text-xs text-gray-600 dark:text-gray-400 overflow-hidden flex-1 ml-1 cursor-text"
-          @click.self="startEditPath"
-        >
-          <span
-            class="cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors shrink-0"
-            @click="navigateTo('/')"
-          >/</span>
-          <template v-for="(crumb, idx) in breadcrumbs" :key="crumb.path">
-            <span
-              class="cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors truncate"
-              :class="{ 'text-gray-800 dark:text-gray-200 font-medium': idx === breadcrumbs.length - 1 }"
-              @click="navigateTo(crumb.path)"
-            >{{ crumb.name }}</span>
-            <span v-if="idx < breadcrumbs.length - 1" class="text-gray-400 dark:text-gray-600 shrink-0">/</span>
-          </template>
-          <!-- Invisible spacer to capture clicks on empty area -->
-          <span class="flex-1" @click="startEditPath" />
-        </div>
-      </template>
-    </PanelHeader>
+    <FileBrowserToolbar
+      :mount-points="mountPoints"
+      :browse-path="currentProject?.browsePath || '/'"
+      :breadcrumbs="breadcrumbs"
+      :editing-path="editingPath"
+      v-model:path-input="pathInput"
+      :show-hidden="showHidden"
+      @navigate="navigateTo"
+      @go-up="goUp"
+      @start-edit="startEditPath"
+      @confirm-path="onConfirmPath"
+      @cancel-edit="cancelEditPath"
+      @toggle-hidden="showHidden = !showHidden"
+    />
 
     <!-- File list with inline expand -->
     <div class="flex-1 overflow-y-auto text-sm select-none">
@@ -399,7 +332,6 @@ watch(tabId, async () => {
         :expanded-dirs="expandedDirs"
         :dir-children="dirChildren"
         :selected-paths="selectedPaths"
-        :format-bytes="formatBytes"
         :show-hidden="showHidden"
         @toggle-expand="toggleExpand"
         @toggle-selection="toggleSelection"
@@ -408,28 +340,14 @@ watch(tabId, async () => {
       />
     </div>
 
-    <!-- Toolbar -->
-    <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
-      <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          :checked="allSelected"
-          @change="allSelected ? deselectAll() : selectAll()"
-          class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"
-        />
-        {{ t('project.selectAll') }}
-      </label>
-      <button
-        @click="addSelectedToProject"
-        :disabled="selectedPaths.size === 0"
-        class="px-3 py-1 text-xs font-medium rounded bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-      >
-        {{ t('project.addToProject') }}
-      </button>
-      <span class="text-xs text-gray-500">
-        {{ selectedPaths.size }} {{ t('project.selected') }}
-      </span>
-    </div>
+    <!-- Нижняя панель выбора -->
+    <FileBrowserSelectionBar
+      :all-selected="allSelected"
+      :selected-count="selectedPaths.size"
+      @select-all="selectAll"
+      @deselect-all="deselectAll"
+      @add-selected="addSelectedToProject"
+    />
 
     <!-- Context menu -->
     <ContextMenu

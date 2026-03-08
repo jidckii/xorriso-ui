@@ -59,32 +59,6 @@ function startBurn() {
   logLines.value.push(`[INFO] Dummy mode: ${options.dummyMode ? 'Yes' : 'No'}`)
 
   emit('start-burn', { ...options })
-
-  // Mock progress for demo (remove when wired to backend)
-  simulateProgress()
-}
-
-function simulateProgress() {
-  let pct = 0
-  const interval = setInterval(() => {
-    pct += Math.random() * 3
-    if (pct >= 100) {
-      pct = 100
-      clearInterval(interval)
-      progress.value.phase = 'Verifying'
-      logLines.value.push('[INFO] Writing complete, verifying...')
-      setTimeout(() => {
-        state.value = 'done'
-        logLines.value.push('[SUCCESS] Burn completed successfully!')
-      }, 1500)
-    }
-    progress.value.percent = Math.min(pct, 100)
-    progress.value.speed = '8.2x (11.2 MB/s)'
-    progress.value.fifoPercent = Math.floor(80 + Math.random() * 20)
-    progress.value.eta = pct < 100 ? `${Math.ceil((100 - pct) / 3)}s` : '0s'
-    progress.value.bytesWritten = Math.floor((pct / 100) * 4.7e9)
-    progress.value.bytesTotal = 4.7e9
-  }, 300)
 }
 
 function handleClose() {

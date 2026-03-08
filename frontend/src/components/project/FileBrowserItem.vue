@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { ChevronRight } from 'lucide-vue-next'
 import FileIcon from '../ui/FileIcon.vue'
 import ImagePreviewTooltip from '../ui/ImagePreviewTooltip.vue'
+import { formatBytes } from '../../composables/useFormatBytes'
+import { isImageFile } from '../../composables/useImagePreview'
 
 const props = defineProps({
   entry: { type: Object, required: true },
@@ -10,7 +12,6 @@ const props = defineProps({
   expandedDirs: { type: Set, required: true },
   dirChildren: { type: Object, required: true },
   selectedPaths: { type: Set, required: true },
-  formatBytes: { type: Function, required: true },
   showHidden: { type: Boolean, default: false },
 })
 
@@ -34,15 +35,6 @@ function getChildren(entry) {
 const previewVisible = ref(false)
 const previewX = ref(0)
 const previewY = ref(0)
-
-const imageExts = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'])
-
-function isImageFile(name) {
-  if (!name) return false
-  const dot = name.lastIndexOf('.')
-  if (dot < 0) return false
-  return imageExts.has(name.substring(dot).toLowerCase())
-}
 
 function onMouseEnter(e, entry) {
   if (entry.isDir || !isImageFile(entry.name)) return
@@ -132,7 +124,6 @@ function onMouseLeave() {
       :expanded-dirs="expandedDirs"
       :dir-children="dirChildren"
       :selected-paths="selectedPaths"
-      :format-bytes="formatBytes"
       :show-hidden="showHidden"
       @toggle-expand="emit('toggle-expand', $event)"
       @toggle-selection="(entry, ev) => emit('toggle-selection', entry, ev)"
