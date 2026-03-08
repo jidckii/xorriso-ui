@@ -13,7 +13,7 @@ function createProjectData(name = 'DISC_1', volumeId = 'DISC_1') {
     entries: [],
     isoOptions: {
       udf: true,
-      isoLevel: 3,
+      isoLevel: 4,
       rockRidge: false,
       joliet: false,
       hfsPlus: false,

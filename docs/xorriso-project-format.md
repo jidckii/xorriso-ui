@@ -60,9 +60,9 @@
 | Поле | Тип | По умолчанию | Описание |
 |------|-----|-------------|----------|
 | `udf` | boolean | `true` | UDF (Universal Disk Format) — обязательна для Blu-ray/BDXL, рекомендуется для DVD |
-| `isoLevel` | number | `3` | Уровень ISO 9660: 1 (8.3 имена), 2 (31 символ), 3 (без ограничения размера файла) |
-| `rockRidge` | boolean | `true` | Rock Ridge — POSIX-расширение: длинные имена, симлинки, права доступа. Важно для Linux |
-| `joliet` | boolean | `true` | Joliet — расширение Microsoft: Unicode-имена до 64 символов. Для совместимости с Windows |
+| `isoLevel` | number | `4` | Уровень ISO 9660: 1 (8.3 имена), 2 (31 символ), 3 (без ограничения размера файла), 4 (ISO 9660:1999 — длинные имена, без ограничений) |
+| `rockRidge` | boolean | `false` | Rock Ridge — POSIX-расширение: длинные имена, симлинки, права доступа. Важно для Linux |
+| `joliet` | boolean | `false` | Joliet — расширение Microsoft: Unicode-имена до 64 символов. Для совместимости с Windows |
 | `hfsPlus` | boolean | `false` | HFS+ — расширение Apple: совместимость с macOS |
 | `zisofs` | boolean | `false` | Прозрачное сжатие данных в ISO (zlib). Уменьшает размер образа, но совместимость ниже |
 | `md5` | boolean | `true` | Вычисление и запись контрольных сумм MD5 для верификации целостности данных |
@@ -91,7 +91,7 @@
 | `streamRecording` | boolean | `false` | Stream Recording — потоковая запись для Blu-ray, повышает производительность |
 | `eject` | boolean | `true` | Автоматически извлечь диск после завершения записи |
 | `burnMode` | string | `"auto"` | Режим записи: `"auto"`, `"DAO"` (Disc-At-Once), `"TAO"` (Track-At-Once) |
-| `padding` | number | `300` | Количество секторов отступа в конце записи (для совместимости) |
+| `padding` | number | `0` | Количество секторов отступа в конце записи (для совместимости) |
 | `multisession` | boolean | `false` | Мультисессия — позволяет дописывать данные на диск позднее |
 
 ### Пояснения
@@ -145,9 +145,9 @@
   ],
   "isoOptions": {
     "udf": true,
-    "isoLevel": 3,
-    "rockRidge": true,
-    "joliet": true,
+    "isoLevel": 4,
+    "rockRidge": false,
+    "joliet": false,
     "hfsPlus": false,
     "zisofs": false,
     "md5": true,
@@ -161,7 +161,7 @@
     "streamRecording": false,
     "eject": true,
     "burnMode": "auto",
-    "padding": 300,
+    "padding": 0,
     "multisession": false
   },
   "createdAt": "2025-01-15T10:30:00Z",

@@ -18,6 +18,7 @@ const props = defineProps({
 const emit = defineEmits([
   'select-device',
   'start-burn',
+  'create-iso',
   'blank-disc',
   'format-disc',
   'refresh-media',
@@ -295,6 +296,15 @@ function handleBlankOrFormat() {
 
       <!-- Кнопки действий: режим burn -->
       <div v-else class="flex items-center gap-3 flex-wrap">
+
+        <!-- Создать ISO (всегда доступна, не требует привода) -->
+        <button
+          @click="emit('create-iso')"
+          :disabled="!project?.entries?.length || isBurning"
+          class="px-5 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {{ t('burn.createIso') }}
+        </button>
 
         <!-- Нет медиа -->
         <span

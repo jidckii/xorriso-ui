@@ -233,6 +233,7 @@ function handleClose() {
           @format-disc="handleFormat"
           @refresh-media="deviceStore.fetchMediaInfo()"
           @eject="deviceStore.ejectDisc()"
+          @create-iso="createISO"
           @save-project="saveProject"
           @update-name="updateProjectName"
         />

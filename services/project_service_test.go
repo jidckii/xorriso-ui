@@ -484,14 +484,14 @@ func TestNewProject(t *testing.T) {
 	if !project.ISOOptions.UDF {
 		t.Error("ISOOptions.UDF should be true by default")
 	}
-	if project.ISOOptions.ISOLevel != 3 {
-		t.Errorf("ISOLevel = %d, want 3", project.ISOOptions.ISOLevel)
+	if project.ISOOptions.ISOLevel != 4 {
+		t.Errorf("ISOLevel = %d, want 4", project.ISOOptions.ISOLevel)
 	}
-	if !project.ISOOptions.RockRidge {
-		t.Error("RockRidge should be true by default")
+	if project.ISOOptions.RockRidge {
+		t.Error("RockRidge should be false by default")
 	}
-	if !project.ISOOptions.Joliet {
-		t.Error("Joliet should be true by default")
+	if project.ISOOptions.Joliet {
+		t.Error("Joliet should be false by default")
 	}
 	if !project.ISOOptions.MD5 {
 		t.Error("MD5 should be true by default")
@@ -506,8 +506,8 @@ func TestNewProject(t *testing.T) {
 	if !project.BurnOptions.Eject {
 		t.Error("Eject should be true by default")
 	}
-	if project.BurnOptions.Padding != 300 {
-		t.Errorf("Padding = %d, want 300", project.BurnOptions.Padding)
+	if project.BurnOptions.Padding != 0 {
+		t.Errorf("Padding = %d, want 0", project.BurnOptions.Padding)
 	}
 	if project.CreatedAt.IsZero() {
 		t.Error("CreatedAt should not be zero")
