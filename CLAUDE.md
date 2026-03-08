@@ -8,7 +8,7 @@ GUI для записи CD/DVD/Blu-ray/BDXL дисков. Backend — Go + xorri
 
 ## Стек
 
-- **Backend**: Go 1.26+, Wails3 v3.0.0-alpha.64
+- **Backend**: Go 1.26+, Wails3 v3.0.0-alpha.74
 - **Frontend**: Vue3 (`<script setup>`), Pinia 3, Vue Router 4 (hash mode), Tailwind CSS v4, vue-i18n, reka-ui, lucide-vue-next
 - **Сборка**: Task (Taskfile.yml), Yarn, wails3 CLI
 - **Зависимости ОС**: xorriso 1.5.6+ (обязателен), mkisofs/cdrtools (опционален, для UDF)
