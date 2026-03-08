@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"xorriso-ui/pkg/xorriso"
 
@@ -19,11 +20,15 @@ type AppSettings struct {
 	Theme       string `json:"theme"`
 }
 
+const (
+	xorrisoQueryTimeout = 10 * time.Second
+)
+
 type SettingsService struct {
-	executor *xorriso.Executor
+	executor xorriso.Runner
 }
 
-func NewSettingsService(executor *xorriso.Executor) *SettingsService {
+func NewSettingsService(executor xorriso.Runner) *SettingsService {
 	return &SettingsService{executor: executor}
 }
 
@@ -97,7 +102,9 @@ type ToolInfo struct {
 
 // GetXorrisoVersion returns xorriso version info
 func (s *SettingsService) GetXorrisoVersion() (string, error) {
-	return s.executor.Version(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), xorrisoQueryTimeout)
+	defer cancel()
+	return s.executor.Version(ctx)
 }
 
 // GetToolsInfo returns information about required external tools (xorriso, mkisofs)
@@ -115,7 +122,9 @@ func (s *SettingsService) GetToolsInfo() ([]ToolInfo, error) {
 		tools[i].Path = p
 		tools[i].Found = true
 
-		cmd := exec.CommandContext(context.Background(), p, "--version")
+		ctx, cancel := context.WithTimeout(context.Background(), xorrisoQueryTimeout)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, p, "--version")
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			// Take only the first line of version output

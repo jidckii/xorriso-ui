@@ -1,5 +1,7 @@
 # Claude
-.claude
+/.claude/settings.local.json
+/.claude/agent-memory/
+/.claude/plans/
 
 # Task
 .task

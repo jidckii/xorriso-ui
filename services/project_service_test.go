@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"xorriso-ui/pkg/models"
 )
 
 // --- Helper function tests ---
@@ -149,7 +151,7 @@ func buildMinimalExif(make_, model string) []byte {
 
 	// TIFF header (little-endian)
 	tiffStart := buf.Len()
-	buf.Write([]byte("II"))         // Little-endian
+	buf.Write([]byte("II"))                             // Little-endian
 	binary.Write(&buf, binary.LittleEndian, uint16(42)) // Magic
 	binary.Write(&buf, binary.LittleEndian, uint32(8))  // Offset to first IFD (from TIFF start)
 
@@ -463,6 +465,228 @@ func TestBrowseDirectory(t *testing.T) {
 
 // --- UnescapeMountPath test ---
 
+// --- Project CRUD тесты ---
+
+func TestNewProject(t *testing.T) {
+	svc := NewProjectService()
+	project := svc.NewProject("Test Project", "TEST_VOL")
+
+	if project.Name != "Test Project" {
+		t.Errorf("Name = %q, want %q", project.Name, "Test Project")
+	}
+	if project.VolumeID != "TEST_VOL" {
+		t.Errorf("VolumeID = %q, want %q", project.VolumeID, "TEST_VOL")
+	}
+	if len(project.Entries) != 0 {
+		t.Errorf("Entries should be empty, got %d", len(project.Entries))
+	}
+	// Проверяем defaults ISOOptions
+	if !project.ISOOptions.UDF {
+		t.Error("ISOOptions.UDF should be true by default")
+	}
+	if project.ISOOptions.ISOLevel != 3 {
+		t.Errorf("ISOLevel = %d, want 3", project.ISOOptions.ISOLevel)
+	}
+	if !project.ISOOptions.RockRidge {
+		t.Error("RockRidge should be true by default")
+	}
+	if !project.ISOOptions.Joliet {
+		t.Error("Joliet should be true by default")
+	}
+	if !project.ISOOptions.MD5 {
+		t.Error("MD5 should be true by default")
+	}
+	// Проверяем defaults BurnOptions
+	if project.BurnOptions.Speed != "auto" {
+		t.Errorf("Speed = %q, want auto", project.BurnOptions.Speed)
+	}
+	if !project.BurnOptions.Verify {
+		t.Error("Verify should be true by default")
+	}
+	if !project.BurnOptions.Eject {
+		t.Error("Eject should be true by default")
+	}
+	if project.BurnOptions.Padding != 300 {
+		t.Errorf("Padding = %d, want 300", project.BurnOptions.Padding)
+	}
+	if project.CreatedAt.IsZero() {
+		t.Error("CreatedAt should not be zero")
+	}
+}
+
+func TestSaveProject_EmptyPath(t *testing.T) {
+	svc := NewProjectService()
+	project := svc.NewProject("Test", "VOL")
+	// FilePath пустой -- SaveProject не должен падать
+	err := svc.SaveProject(project)
+	if err != nil {
+		t.Fatalf("SaveProject with empty path should return nil, got: %v", err)
+	}
+}
+
+func TestSaveAndOpenProject(t *testing.T) {
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "test.xorriso-project")
+
+	svc := NewProjectService()
+	project := svc.NewProject("Roundtrip Test", "RT_VOL")
+	project.Entries = []models.FileEntry{
+		{SourcePath: "/tmp/file.txt", DestPath: "/file.txt", Name: "file.txt", Size: 1024},
+	}
+	project.ISOOptions.HFSPlus = true
+
+	// Сохраняем
+	err := svc.SaveProjectAs(project, filePath)
+	if err != nil {
+		t.Fatalf("SaveProjectAs: %v", err)
+	}
+
+	// Загружаем обратно
+	loaded, err := svc.OpenProject(filePath)
+	if err != nil {
+		t.Fatalf("OpenProject: %v", err)
+	}
+
+	if loaded.Name != "Roundtrip Test" {
+		t.Errorf("Name = %q, want %q", loaded.Name, "Roundtrip Test")
+	}
+	if loaded.VolumeID != "RT_VOL" {
+		t.Errorf("VolumeID = %q, want %q", loaded.VolumeID, "RT_VOL")
+	}
+	if loaded.FilePath != filePath {
+		t.Errorf("FilePath = %q, want %q", loaded.FilePath, filePath)
+	}
+	if len(loaded.Entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(loaded.Entries))
+	}
+	if loaded.Entries[0].SourcePath != "/tmp/file.txt" {
+		t.Errorf("Entry SourcePath = %q, want /tmp/file.txt", loaded.Entries[0].SourcePath)
+	}
+	if !loaded.ISOOptions.HFSPlus {
+		t.Error("ISOOptions.HFSPlus should be true")
+	}
+}
+
+func TestAddFiles_SingleFile(t *testing.T) {
+	dir := t.TempDir()
+	testFile := filepath.Join(dir, "hello.txt")
+	os.WriteFile(testFile, []byte("hello world"), 0644)
+
+	svc := NewProjectService()
+	project := svc.NewProject("Test", "VOL")
+
+	project, err := svc.AddFiles(project, []string{testFile}, "/")
+	if err != nil {
+		t.Fatalf("AddFiles: %v", err)
+	}
+
+	if len(project.Entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(project.Entries))
+	}
+
+	entry := project.Entries[0]
+	if entry.Name != "hello.txt" {
+		t.Errorf("Name = %q, want hello.txt", entry.Name)
+	}
+	if entry.SourcePath != testFile {
+		t.Errorf("SourcePath = %q, want %q", entry.SourcePath, testFile)
+	}
+	if entry.DestPath != "/hello.txt" {
+		t.Errorf("DestPath = %q, want /hello.txt", entry.DestPath)
+	}
+	if entry.IsDir {
+		t.Error("IsDir should be false for a file")
+	}
+	if entry.Size != 11 {
+		t.Errorf("Size = %d, want 11", entry.Size)
+	}
+}
+
+func TestAddFiles_Directory(t *testing.T) {
+	dir := t.TempDir()
+	subDir := filepath.Join(dir, "mydir")
+	os.MkdirAll(subDir, 0755)
+	os.WriteFile(filepath.Join(subDir, "a.txt"), []byte("aaa"), 0644)
+	os.WriteFile(filepath.Join(subDir, "b.txt"), []byte("bbb"), 0644)
+
+	svc := NewProjectService()
+	project := svc.NewProject("Test", "VOL")
+
+	project, err := svc.AddFiles(project, []string{subDir}, "/")
+	if err != nil {
+		t.Fatalf("AddFiles: %v", err)
+	}
+
+	// Ожидаем: директория + 2 файла внутри = 3 записи
+	if len(project.Entries) != 3 {
+		t.Fatalf("expected 3 entries (dir + 2 files), got %d", len(project.Entries))
+	}
+
+	// Первая запись -- сама директория
+	if !project.Entries[0].IsDir {
+		t.Error("first entry should be a directory")
+	}
+	if project.Entries[0].Name != "mydir" {
+		t.Errorf("first entry Name = %q, want mydir", project.Entries[0].Name)
+	}
+}
+
+func TestRemoveEntry(t *testing.T) {
+	svc := NewProjectService()
+	project := svc.NewProject("Test", "VOL")
+	project.Entries = []models.FileEntry{
+		{SourcePath: "/a", DestPath: "/a.txt", Name: "a.txt", Size: 10},
+		{SourcePath: "/b", DestPath: "/b.txt", Name: "b.txt", Size: 20},
+		{SourcePath: "/c", DestPath: "/c.txt", Name: "c.txt", Size: 30},
+	}
+
+	project, err := svc.RemoveEntry(project, "/b.txt")
+	if err != nil {
+		t.Fatalf("RemoveEntry: %v", err)
+	}
+
+	if len(project.Entries) != 2 {
+		t.Fatalf("expected 2 entries after removal, got %d", len(project.Entries))
+	}
+
+	for _, e := range project.Entries {
+		if e.DestPath == "/b.txt" {
+			t.Error("entry /b.txt should have been removed")
+		}
+	}
+}
+
+func TestCalculateSize(t *testing.T) {
+	svc := NewProjectService()
+	project := svc.NewProject("Test", "VOL")
+	project.Entries = []models.FileEntry{
+		{Size: 1000},
+		{Size: 2000},
+		{Size: 3000},
+	}
+
+	total, err := svc.CalculateSize(project)
+	if err != nil {
+		t.Fatalf("CalculateSize: %v", err)
+	}
+	if total != 6000 {
+		t.Errorf("total = %d, want 6000", total)
+	}
+}
+
+func TestCalculateSize_Empty(t *testing.T) {
+	svc := NewProjectService()
+	project := svc.NewProject("Test", "VOL")
+
+	total, err := svc.CalculateSize(project)
+	if err != nil {
+		t.Fatalf("CalculateSize: %v", err)
+	}
+	if total != 0 {
+		t.Errorf("total = %d, want 0 for empty project", total)
+	}
+}
+
 func TestUnescapeMountPath(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -470,8 +694,8 @@ func TestUnescapeMountPath(t *testing.T) {
 	}{
 		{"/mnt/simple", "/mnt/simple"},
 		{"/run/media/user/My\\040Drive", "/run/media/user/My Drive"},
-		{"/mnt/a\\134b", "/mnt/a\\b"},                 // backslash
-		{"/mnt/tab\\011here", "/mnt/tab\there"},        // tab
+		{"/mnt/a\\134b", "/mnt/a\\b"},           // backslash
+		{"/mnt/tab\\011here", "/mnt/tab\there"}, // tab
 		{"/mnt/multi\\040word\\040path", "/mnt/multi word path"},
 	}
 	for _, tt := range tests {

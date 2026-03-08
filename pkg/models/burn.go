@@ -5,12 +5,12 @@ import "time"
 type BurnState string
 
 const (
-	BurnStatePending   BurnState = "pending"
-	BurnStateFormat    BurnState = "formatting"
-	BurnStateWriting   BurnState = "writing"
-	BurnStateVerifying BurnState = "verifying"
-	BurnStateDone      BurnState = "done"
-	BurnStateError     BurnState = "error"
+	BurnStatePending     BurnState = "pending"
+	BurnStateFormat      BurnState = "formatting"
+	BurnStateWriting     BurnState = "writing"
+	BurnStateVerifying   BurnState = "verifying"
+	BurnStateDone        BurnState = "done"
+	BurnStateError       BurnState = "error"
 	BurnStateCancelled   BurnState = "cancelled"
 	BurnStateCreatingISO BurnState = "creating_iso"
 )

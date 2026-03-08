@@ -20,6 +20,7 @@ type Progress struct {
 var updatePercentRe = regexp.MustCompile(`(\d+\.?\d*)%\s+done`)
 var updateFifoRe = regexp.MustCompile(`fifo\s+(\d+)%`)
 var updateSpeedRe = regexp.MustCompile(`(\d+\.?\d*x[A-Z]+|\d+\.?\d*\s*[kMG]B/s)`)
+var updateETARe = regexp.MustCompile(`remaining\s+(\d+:\d+:\d+|\d+:\d+)`)
 
 // ParsePacifierLine tries to extract progress from an xorriso info line
 func ParsePacifierLine(line string) (Progress, bool) {
@@ -54,6 +55,11 @@ func ParsePacifierLine(line string) (Progress, bool) {
 	// Extract speed
 	if m := updateSpeedRe.FindStringSubmatch(line); m != nil {
 		p.Speed = m[1]
+	}
+
+	// Extract ETA
+	if m := updateETARe.FindStringSubmatch(line); m != nil {
+		p.ETA = m[1]
 	}
 
 	return p, true

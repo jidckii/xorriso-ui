@@ -17,23 +17,23 @@ func (b *CommandBuilder) add(args ...string) *CommandBuilder {
 }
 
 // Basic settings
-func (b *CommandBuilder) PktOutput() *CommandBuilder       { return b.add("-pkt_output", "on") }
-func (b *CommandBuilder) Device(dev string) *CommandBuilder { return b.add("-dev", dev) }
-func (b *CommandBuilder) InDevice(dev string) *CommandBuilder { return b.add("-indev", dev) }
+func (b *CommandBuilder) PktOutput() *CommandBuilder           { return b.add("-pkt_output", "on") }
+func (b *CommandBuilder) Device(dev string) *CommandBuilder    { return b.add("-dev", dev) }
+func (b *CommandBuilder) InDevice(dev string) *CommandBuilder  { return b.add("-indev", dev) }
 func (b *CommandBuilder) OutDevice(dev string) *CommandBuilder { return b.add("-outdev", dev) }
 
 // Information queries
-func (b *CommandBuilder) Devices() *CommandBuilder         { return b.add("-device_links") }
-func (b *CommandBuilder) TOC() *CommandBuilder              { return b.add("-toc") }
-func (b *CommandBuilder) ListFormats() *CommandBuilder      { return b.add("-list_formats") }
-func (b *CommandBuilder) ListSpeeds() *CommandBuilder       { return b.add("-list_speeds") }
+func (b *CommandBuilder) Devices() *CommandBuilder     { return b.add("-device_links") }
+func (b *CommandBuilder) TOC() *CommandBuilder         { return b.add("-toc") }
+func (b *CommandBuilder) ListFormats() *CommandBuilder { return b.add("-list_formats") }
+func (b *CommandBuilder) ListSpeeds() *CommandBuilder  { return b.add("-list_speeds") }
 func (b *CommandBuilder) ListProfiles(which string) *CommandBuilder {
 	return b.add("-list_profiles", which)
 }
-func (b *CommandBuilder) TellMediaSpace() *CommandBuilder   { return b.add("-tell_media_space") }
-func (b *CommandBuilder) CheckDrive() *CommandBuilder       { return b.add("-checkdrive") }
-func (b *CommandBuilder) PrintSize() *CommandBuilder        { return b.add("-print_size") }
-func (b *CommandBuilder) PVDInfo() *CommandBuilder          { return b.add("-pvd_info") }
+func (b *CommandBuilder) TellMediaSpace() *CommandBuilder { return b.add("-tell_media_space") }
+func (b *CommandBuilder) CheckDrive() *CommandBuilder     { return b.add("-checkdrive") }
+func (b *CommandBuilder) PrintSize() *CommandBuilder      { return b.add("-print_size") }
+func (b *CommandBuilder) PVDInfo() *CommandBuilder        { return b.add("-pvd_info") }
 
 // ISO options
 func (b *CommandBuilder) VolumeID(id string) *CommandBuilder { return b.add("-volid", id) }
@@ -52,7 +52,7 @@ func (b *CommandBuilder) Joliet(on bool) *CommandBuilder {
 func (b *CommandBuilder) ISOLevel(level int) *CommandBuilder {
 	return b.add("-iso_level", strconv.Itoa(level))
 }
-func (b *CommandBuilder) MD5(mode string) *CommandBuilder { return b.add("-md5", mode) }
+func (b *CommandBuilder) MD5(mode string) *CommandBuilder      { return b.add("-md5", mode) }
 func (b *CommandBuilder) CheckMD5(mode string) *CommandBuilder { return b.add("-check_md5", mode) }
 func (b *CommandBuilder) HFSPlus(on bool) *CommandBuilder {
 	if on {
@@ -64,9 +64,9 @@ func (b *CommandBuilder) Zisofs(on bool) *CommandBuilder {
 	if on {
 		return b.add("-zisofs", "by_magic")
 	}
-	return b
+	return b.add("-zisofs", "off")
 }
-func (b *CommandBuilder) ForBackup() *CommandBuilder        { return b.add("-for_backup") }
+func (b *CommandBuilder) ForBackup() *CommandBuilder { return b.add("-for_backup") }
 
 // File operations
 func (b *CommandBuilder) Map(source, dest string) *CommandBuilder {
@@ -119,16 +119,16 @@ func (b *CommandBuilder) Eject(which string) *CommandBuilder {
 }
 
 // cdrecord emulation mode
-func (b *CommandBuilder) CdrecordMode() *CommandBuilder           { return b.add("-as", "cdrecord") }
-func (b *CommandBuilder) CdrecordDev(dev string) *CommandBuilder  { return b.add("dev=" + dev) }
+func (b *CommandBuilder) CdrecordMode() *CommandBuilder              { return b.add("-as", "cdrecord") }
+func (b *CommandBuilder) CdrecordDev(dev string) *CommandBuilder     { return b.add("dev=" + dev) }
 func (b *CommandBuilder) CdrecordSpeed(speed string) *CommandBuilder { return b.add("speed=" + speed) }
-func (b *CommandBuilder) Verbose() *CommandBuilder                { return b.add("-v") }
+func (b *CommandBuilder) Verbose() *CommandBuilder                   { return b.add("-v") }
 
 // Arg adds a raw argument
 func (b *CommandBuilder) Arg(arg string) *CommandBuilder { return b.add(arg) }
 
 // Blanking and formatting
-func (b *CommandBuilder) Blank(mode string) *CommandBuilder { return b.add("-blank", mode) }
+func (b *CommandBuilder) Blank(mode string) *CommandBuilder  { return b.add("-blank", mode) }
 func (b *CommandBuilder) Format(mode string) *CommandBuilder { return b.add("-format", mode) }
 
 // Verification

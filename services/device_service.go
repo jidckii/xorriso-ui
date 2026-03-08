@@ -18,17 +18,28 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
+const (
+	devicePollInterval = 5 * time.Second
+)
+
 type DeviceService struct {
-	executor *xorriso.Executor
-	mu       sync.RWMutex
-	devices  []models.Device
-	stopCh   chan struct{}
+	executor  xorriso.Runner
+	mu        sync.RWMutex
+	devices   []models.Device
+	stopCh    chan struct{}
+	emitEvent func(name string, data ...interface{})
+	// Paths for /proc and /sys, overridable for testing
+	procCdromInfoPath string
+	sysBlockPath      string
 }
 
-func NewDeviceService(executor *xorriso.Executor) *DeviceService {
+func NewDeviceService(executor xorriso.Runner) *DeviceService {
 	return &DeviceService{
-		executor: executor,
-		stopCh:   make(chan struct{}),
+		executor:          executor,
+		stopCh:            make(chan struct{}),
+		emitEvent:         defaultEmitEvent,
+		procCdromInfoPath: "/proc/sys/dev/cdrom/info",
+		sysBlockPath:      "/sys/block",
 	}
 }
 
@@ -51,7 +62,7 @@ func (s *DeviceService) ServiceShutdown() error {
 
 // ListDevices detects optical drives via /proc/sys/dev/cdrom/info and /sys/block/
 func (s *DeviceService) ListDevices() ([]models.Device, error) {
-	devices, err := discoverDrivesFromProc()
+	devices, err := discoverDrivesFromProc(s.procCdromInfoPath, s.sysBlockPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover drives: %w", err)
 	}
@@ -73,8 +84,8 @@ func (s *DeviceService) ListDevices() ([]models.Device, error) {
 
 // discoverDrivesFromProc reads /proc/sys/dev/cdrom/info to get drive names
 // and capabilities, then reads /sys/block/<name>/device/ for vendor and model.
-func discoverDrivesFromProc() ([]models.Device, error) {
-	f, err := os.Open("/proc/sys/dev/cdrom/info")
+func discoverDrivesFromProc(procCdromInfoPath, sysBlockPath string) ([]models.Device, error) {
+	f, err := os.Open(procCdromInfoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +130,7 @@ func discoverDrivesFromProc() ([]models.Device, error) {
 			LinkPath: resolveSymlink(fmt.Sprintf("/dev/%s", name)),
 		}
 
-		sysPath := filepath.Join("/sys/block", name, "device")
+		sysPath := filepath.Join(sysBlockPath, name, "device")
 		dev.Vendor = readSysFile(filepath.Join(sysPath, "vendor"))
 		dev.Model = readSysFile(filepath.Join(sysPath, "model"))
 		dev.Revision = readSysFile(filepath.Join(sysPath, "rev"))
@@ -196,11 +207,11 @@ func (s *DeviceService) GetMediaInfo(devicePath string) (*models.MediaInfo, erro
 
 	// Parse media space (free blocks)
 	freeBlocks, _ := xorriso.ParseMediaSpace(lines)
-	info.FreeSpace = freeBlocks * 2048 // blocks are 2048 bytes
+	info.FreeSpace = freeBlocks * models.BlockSizeBytes // blocks are 2048 bytes
 
 	// Parse media blocks for total capacity
 	_, _, overall := xorriso.ParseMediaBlocks(lines)
-	info.TotalCapacity = overall * 2048
+	info.TotalCapacity = overall * models.BlockSizeBytes
 
 	// Parse sessions count
 	info.Sessions = xorriso.ParseMediaSummary(lines)
@@ -286,7 +297,7 @@ func (s *DeviceService) EjectDisc(devicePath string) error {
 }
 
 func (s *DeviceService) pollDevices() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(devicePollInterval)
 	defer ticker.Stop()
 
 	for {
@@ -296,9 +307,7 @@ func (s *DeviceService) pollDevices() {
 		case <-ticker.C:
 			devices, err := s.ListDevices()
 			if err == nil {
-				if app := application.Get(); app != nil {
-					app.Event.Emit(models.EventDeviceListUpdated, devices)
-				}
+				s.emitEvent(models.EventDeviceListUpdated, devices)
 			}
 		}
 	}

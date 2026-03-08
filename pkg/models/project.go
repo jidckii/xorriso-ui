@@ -14,12 +14,11 @@ type Project struct {
 }
 
 type FileEntry struct {
-	SourcePath string      `json:"sourcePath"`
-	DestPath   string      `json:"destPath"`
-	Name       string      `json:"name"`
-	IsDir      bool        `json:"isDir"`
-	Size       int64       `json:"size"`
-	Children   []FileEntry `json:"children,omitempty"`
+	SourcePath string `json:"sourcePath"`
+	DestPath   string `json:"destPath"`
+	Name       string `json:"name"`
+	IsDir      bool   `json:"isDir"`
+	Size       int64  `json:"size"`
 }
 
 type ISOOptions struct {

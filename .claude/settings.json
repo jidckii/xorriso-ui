@@ -1,0 +1,49 @@
+{
+  "plansDirectory": ".claude/plans",
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf **/node_modules)",
+      "Bash(rm -rf **/dist)",
+      "Bash(*)",
+      "mcp__playwright__*",
+      "mcp__jetbrains__*",
+      "mcp__ide__getDiagnostics",
+      "mcp__k8s__*",
+      "WebSearch(*)",
+      "WebFetch(*)",
+      "Task",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskList",
+      "TaskGet",
+      "TaskOutput",
+      "TaskStop",
+      "WebSearch"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(var/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/credentials.json)",
+      "Read(**/secrets.yaml)",
+      "NotebookEdit",
+      "mcp__ide__executeCode",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(git checkout .:*)",
+      "Bash(git restore .:*)",
+      "Bash(git branch -D:*)",
+      "Bash(drop table:*)",
+      "Bash(drop database:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(kubectl drain:*)",
+      "Bash(kubectl cordon:*)"
+    ],
+    "ask": []
+  }
+}
