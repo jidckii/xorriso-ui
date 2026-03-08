@@ -1,7 +1,7 @@
 <script setup>
 import { Dialogs } from '@wailsio/runtime'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '../../stores/themeStore'
 import { useTabStore } from '../../stores/tabStore'
 import { useProjectStore } from '../../stores/projectStore'
@@ -9,6 +9,7 @@ import Button from '../ui/Button.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const themeStore = useThemeStore()
 const tabStore = useTabStore()
 const projectStore = useProjectStore()
@@ -139,8 +140,8 @@ function toggleDiscInfo() {
     </button>
 
     <!-- Settings -->
-    <router-link
-      to="/settings"
+    <button
+      @click="route.path === '/settings' ? router.push('/') : router.push('/settings')"
       class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
     >
       <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,6 +149,6 @@ function toggleDiscInfo() {
           d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
-    </router-link>
+    </button>
   </header>
 </template>

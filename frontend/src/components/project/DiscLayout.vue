@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { TreeRoot, TreeItem } from 'reka-ui'
 import { ChevronRight } from 'lucide-vue-next'
 import FileIcon from '../ui/FileIcon.vue'
+import PanelHeader from '../ui/PanelHeader.vue'
 import ImagePreviewTooltip from '../ui/ImagePreviewTooltip.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTabStore } from '../../stores/tabStore'
@@ -56,14 +57,52 @@ function buildTreeFromEntries(entries) {
 }
 
 const expanded = ref([])
-const selected = ref([])
 
-function onSelectionChange(val) {
-  if (!currentProject.value) return
-  const items = Array.isArray(val) ? val : [val]
-  selected.value = items
-  currentProject.value.selectedProjectEntries = items.map(i => i.destPath || i._key)
+// Manual selection with parent-child propagation
+const selectedKeys = ref(new Set())
+
+function isItemSelected(key) {
+  return selectedKeys.value.has(key)
 }
+
+function toggleItemSelection(item) {
+  const selecting = !selectedKeys.value.has(item._key)
+
+  if (selecting) {
+    selectedKeys.value.add(item._key)
+  } else {
+    selectedKeys.value.delete(item._key)
+  }
+
+  // Propagate to children
+  if (item.children && item.children.length > 0) {
+    propagateSelection(item.children, selecting)
+  }
+
+  selectedKeys.value = new Set(selectedKeys.value)
+  syncProjectSelection()
+}
+
+function propagateSelection(children, selecting) {
+  for (const child of children) {
+    if (selecting) {
+      selectedKeys.value.add(child._key)
+    } else {
+      selectedKeys.value.delete(child._key)
+    }
+    if (child.children && child.children.length > 0) {
+      propagateSelection(child.children, selecting)
+    }
+  }
+}
+
+function syncProjectSelection() {
+  if (currentProject.value) {
+    currentProject.value.selectedProjectEntries = [...selectedKeys.value]
+  }
+}
+
+const selectedCount = computed(() => selectedKeys.value.size)
 
 async function removeSelectedFromProject() {
   if (!currentProject.value) return
@@ -71,7 +110,44 @@ async function removeSelectedFromProject() {
     await projectStore.removeEntry(tabId.value, destPath)
   }
   currentProject.value.selectedProjectEntries = []
-  selected.value = []
+  selectedKeys.value = new Set()
+}
+
+// Select all / deselect all
+function selectAllItems(items) {
+  for (const item of items) {
+    selectedKeys.value.add(item._key)
+    if (item.children && item.children.length > 0) {
+      selectAllItems(item.children)
+    }
+  }
+}
+
+function selectAll() {
+  selectAllItems(treeItems.value)
+  selectedKeys.value = new Set(selectedKeys.value)
+  syncProjectSelection()
+}
+
+function deselectAll() {
+  selectedKeys.value = new Set()
+  syncProjectSelection()
+}
+
+const allSelected = computed(() => {
+  if (treeItems.value.length === 0) return false
+  return selectedKeys.value.size > 0 && countAllItems(treeItems.value) === selectedKeys.value.size
+})
+
+function countAllItems(items) {
+  let count = 0
+  for (const item of items) {
+    count++
+    if (item.children && item.children.length > 0) {
+      count += countAllItems(item.children)
+    }
+  }
+  return count
 }
 
 function goToBurn() {
@@ -126,17 +202,21 @@ function onItemMouseLeave() {
 
 <template>
   <div class="flex flex-col h-full">
-    <!-- Header -->
-    <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 min-h-[34px]">
-      <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" stroke-width="1.5" />
-        <circle cx="12" cy="12" r="3" stroke-width="1.5" />
-      </svg>
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('project.discLayout') }}</span>
-      <span class="ml-auto text-xs text-gray-500">
-        {{ currentProject?.entries?.length || 0 }} {{ t('project.items') }} — {{ formatBytes(currentProject?.totalSize || 0) }}
-      </span>
-    </div>
+    <PanelHeader>
+      <template #row1>
+        <svg class="w-4 h-4 text-gray-600 dark:text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke-width="1.5" />
+          <circle cx="12" cy="12" r="3" stroke-width="1.5" />
+        </svg>
+        <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ t('project.discLayout') }}</span>
+        <span class="flex-1" />
+      </template>
+      <template #row2>
+        <span class="text-xs text-gray-500">
+          {{ currentProject?.entries?.length || 0 }} {{ t('project.items') }} — {{ formatBytes(currentProject?.totalSize || 0) }}
+        </span>
+      </template>
+    </PanelHeader>
 
     <!-- Tree content -->
     <div class="flex-1 overflow-y-auto">
@@ -159,24 +239,22 @@ function onItemMouseLeave() {
         :get-key="getKey"
         :get-children="getChildren"
         v-model:expanded="expanded"
-        :model-value="selected"
-        multiple
-        selection-behavior="toggle"
-        class="w-full text-sm"
-        @update:model-value="onSelectionChange"
+        class="w-full text-sm select-none"
       >
         <template #default="{ flattenItems }">
           <TreeItem
             v-for="item in flattenItems"
             :key="item._id"
             v-bind="item.bind"
-            class="flex items-center gap-1.5 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors outline-none data-[selected]:bg-blue-900/20"
+            class="flex items-center gap-1.5 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors outline-none"
+            :class="{ 'bg-blue-500/15': isItemSelected(item.value._key) }"
             :style="{ paddingLeft: (item.level * 16 + 8) + 'px', paddingRight: '8px' }"
+            @click="toggleItemSelection(item.value)"
             @mouseenter="onItemMouseEnter($event, item.value)"
             @mousemove="onItemMouseMove"
             @mouseleave="onItemMouseLeave"
           >
-            <template #default="{ isExpanded, isSelected }">
+            <template #default="{ isExpanded }">
               <!-- Expand chevron -->
               <span class="w-4 h-4 flex items-center justify-center shrink-0">
                 <ChevronRight
@@ -190,9 +268,9 @@ function onItemMouseLeave() {
               <!-- Selection checkbox -->
               <input
                 type="checkbox"
-                :checked="isSelected"
+                :checked="isItemSelected(item.value._key)"
+                @click.stop="toggleItemSelection(item.value)"
                 class="w-3.5 h-3.5 accent-blue-600 shrink-0 cursor-pointer"
-                @click.stop
               />
 
               <!-- File/folder icon -->
@@ -228,13 +306,25 @@ function onItemMouseLeave() {
 
     <!-- Toolbar -->
     <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
+      <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          :checked="allSelected"
+          @change="allSelected ? deselectAll() : selectAll()"
+          class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"
+        />
+        {{ t('project.selectAll') }}
+      </label>
       <button
         @click="removeSelectedFromProject"
-        :disabled="!currentProject || currentProject.selectedProjectEntries.length === 0"
+        :disabled="selectedCount === 0"
         class="px-3 py-1 text-xs font-medium rounded bg-red-600 hover:bg-red-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         {{ t('project.remove') }}
       </button>
+      <span class="text-xs text-gray-500">
+        {{ selectedCount }} {{ t('project.selected') }}
+      </span>
       <span class="flex-1"></span>
       <button
         @click="goToBurn"
