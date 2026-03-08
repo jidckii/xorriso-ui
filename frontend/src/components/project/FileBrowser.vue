@@ -196,12 +196,24 @@ function onDblClick(entry) {
 // Add selected to project
 async function addSelectedToProject() {
   if (!currentProject.value) return
-  const paths = [...selectedPaths.value]
-  if (paths.length > 0) {
-    await projectStore.addFiles(tabId.value, paths)
-    selectedPaths.value = new Set()
-    syncSelection()
-  }
+  const allPaths = [...selectedPaths.value]
+  if (allPaths.length === 0) return
+
+  // Filter out paths whose parent directory is already in the selection,
+  // because AddFiles recursively expands directories
+  const pathSet = new Set(allPaths)
+  const paths = allPaths.filter(p => {
+    let parent = p.substring(0, p.lastIndexOf('/'))
+    while (parent) {
+      if (pathSet.has(parent)) return false
+      parent = parent.substring(0, parent.lastIndexOf('/'))
+    }
+    return true
+  })
+
+  await projectStore.addFiles(tabId.value, paths)
+  selectedPaths.value = new Set()
+  syncSelection()
 }
 
 // Context menu

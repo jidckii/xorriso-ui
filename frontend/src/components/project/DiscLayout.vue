@@ -101,9 +101,9 @@ const selectedCount = computed(() => selectedKeys.value.size)
 
 async function removeSelectedFromProject() {
   if (!currentProject.value) return
-  for (const destPath of currentProject.value.selectedProjectEntries) {
-    await projectStore.removeEntry(tabId.value, destPath)
-  }
+  // Собираем все выбранные пути и удаляем одним пакетным IPC-вызовом
+  const paths = [...currentProject.value.selectedProjectEntries]
+  await projectStore.removeEntries(tabId.value, paths)
   currentProject.value.selectedProjectEntries = []
   selectedKeys.value = new Set()
 }

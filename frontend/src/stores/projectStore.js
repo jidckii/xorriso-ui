@@ -8,6 +8,7 @@ import {
   BrowseDirectory,
   AddFiles,
   RemoveEntry,
+  RemoveEntries,
   CalculateSize,
   GetHomeDirectory,
   ListMountPoints,
@@ -78,6 +79,22 @@ export const useProjectStore = defineStore('project', () => {
       await calculateSize(tabId)
     } catch (error) {
       console.error('Failed to remove entry:', error)
+    }
+  }
+
+  // Пакетное удаление нескольких записей за один IPC-вызов
+  async function removeEntries(tabId, destPaths) {
+    if (!destPaths || destPaths.length === 0) return
+    const tabStore = useTabStore()
+    const data = tabStore.getProjectData(tabId)
+    if (!data) return
+
+    try {
+      const result = await RemoveEntries({ ...data }, destPaths)
+      tabStore.updateProjectData(tabId, { entries: result.entries, modified: true })
+      await calculateSize(tabId)
+    } catch (error) {
+      console.error('Failed to remove entries:', error)
     }
   }
 
@@ -156,6 +173,7 @@ export const useProjectStore = defineStore('project', () => {
     saveProjectAs,
     addFiles,
     removeEntry,
+    removeEntries,
     calculateSize,
     browseDirectory,
     getHomeDirectory,

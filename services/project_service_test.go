@@ -656,6 +656,56 @@ func TestRemoveEntry(t *testing.T) {
 	}
 }
 
+func TestRemoveEntries(t *testing.T) {
+	svc := NewProjectService()
+	project := svc.NewProject("Test", "VOL")
+	project.Entries = []models.FileEntry{
+		{SourcePath: "/a", DestPath: "/a.txt", Name: "a.txt", Size: 10},
+		{SourcePath: "/b", DestPath: "/b.txt", Name: "b.txt", Size: 20},
+		{SourcePath: "/c", DestPath: "/c.txt", Name: "c.txt", Size: 30},
+		{SourcePath: "/d", DestPath: "/d.txt", Name: "d.txt", Size: 40},
+	}
+
+	project, err := svc.RemoveEntries(project, []string{"/b.txt", "/d.txt"})
+	if err != nil {
+		t.Fatalf("RemoveEntries: %v", err)
+	}
+
+	if len(project.Entries) != 2 {
+		t.Fatalf("expected 2 entries after removal, got %d", len(project.Entries))
+	}
+
+	for _, e := range project.Entries {
+		if e.DestPath == "/b.txt" || e.DestPath == "/d.txt" {
+			t.Errorf("entry %s should have been removed", e.DestPath)
+		}
+	}
+
+	if project.Entries[0].DestPath != "/a.txt" {
+		t.Errorf("first entry DestPath = %q, want /a.txt", project.Entries[0].DestPath)
+	}
+	if project.Entries[1].DestPath != "/c.txt" {
+		t.Errorf("second entry DestPath = %q, want /c.txt", project.Entries[1].DestPath)
+	}
+}
+
+func TestRemoveEntries_EmptyList(t *testing.T) {
+	svc := NewProjectService()
+	project := svc.NewProject("Test", "VOL")
+	project.Entries = []models.FileEntry{
+		{SourcePath: "/a", DestPath: "/a.txt", Name: "a.txt", Size: 10},
+	}
+
+	project, err := svc.RemoveEntries(project, []string{})
+	if err != nil {
+		t.Fatalf("RemoveEntries: %v", err)
+	}
+
+	if len(project.Entries) != 1 {
+		t.Fatalf("expected 1 entry after empty removal, got %d", len(project.Entries))
+	}
+}
+
 func TestCalculateSize(t *testing.T) {
 	svc := NewProjectService()
 	project := svc.NewProject("Test", "VOL")

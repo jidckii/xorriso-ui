@@ -138,6 +138,24 @@ func (s *ProjectService) RemoveEntry(project *models.Project, destPath string) (
 	return project, nil
 }
 
+// RemoveEntries удаляет несколько записей из проекта по списку destPaths
+func (s *ProjectService) RemoveEntries(project *models.Project, destPaths []string) (*models.Project, error) {
+	toRemove := make(map[string]struct{}, len(destPaths))
+	for _, p := range destPaths {
+		toRemove[p] = struct{}{}
+	}
+
+	filtered := make([]models.FileEntry, 0, len(project.Entries))
+	for _, e := range project.Entries {
+		if _, ok := toRemove[e.DestPath]; !ok {
+			filtered = append(filtered, e)
+		}
+	}
+	project.Entries = filtered
+	project.UpdatedAt = time.Now()
+	return project, nil
+}
+
 // CalculateSize returns total size of all entries in bytes
 func (s *ProjectService) CalculateSize(project *models.Project) (int64, error) {
 	var total int64

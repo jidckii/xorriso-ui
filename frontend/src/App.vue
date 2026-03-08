@@ -32,14 +32,9 @@ onMounted(async () => {
     <TabBar v-if="isMainView" />
     <main class="flex-1 overflow-hidden relative">
       <template v-if="isMainView">
-        <ProjectView :key="tabStore.activeTabId" />
-        <!-- Disc Info overlay -->
-        <div
-          v-if="tabStore.showDiscInfo"
-          class="absolute inset-0 z-10 bg-white dark:bg-gray-900"
-        >
-          <DiscInfoView @close="tabStore.showDiscInfo = false" />
-        </div>
+        <ProjectView v-show="!tabStore.showDiscInfo" :key="tabStore.activeTabId" />
+        <!-- Disc Info -->
+        <DiscInfoView v-if="tabStore.showDiscInfo" @close="tabStore.showDiscInfo = false" />
       </template>
       <router-view v-else />
     </main>
