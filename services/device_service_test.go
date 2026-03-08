@@ -195,11 +195,11 @@ func TestGetSpeeds(t *testing.T) {
 		RunFn: func(ctx context.Context, args ...string) (*xorriso.CmdResult, error) {
 			return &xorriso.CmdResult{
 				ResultLines: []string{
-					"Write speed  :   4233k , 24.0xC",
-					"Write speed  :   2822k , 16.0xC",
-					"Write speed  :   1764k , 10.0xC",
-					"Write speed h:   4234k , 24.0xC",
-					"Write speed L:   1764k , 10.0xC",
+					" Write speed  :   4233k , 24.0xC",
+					" Write speed  :   2822k , 16.0xC",
+					" Write speed  :   1764k , 10.0xC",
+					" Write speed h:   4234k , 24.0xC",
+					" Write speed L:   1764k , 10.0xC",
 				},
 			}, nil
 		},

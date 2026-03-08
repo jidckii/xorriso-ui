@@ -214,13 +214,14 @@ func TestParseDevices_Empty(t *testing.T) {
 // --- ParseSpeeds ---
 
 func TestParseSpeeds(t *testing.T) {
+	// Lines come from pkt_output with leading space after R:1: prefix stripping
 	lines := []string{
-		"Write speed  :   4233k , 24.0xC",
-		"Write speed  :   2822k , 16.0xC",
-		"Write speed  :   1764k , 10.0xC",
-		"Write speed h:   4234k , 24.0xC",
-		"Write speed L:   1764k , 10.0xC",
-		"Write speed H:   4234k , 24.0xC",
+		" Write speed  :   4233k , 24.0xC",
+		" Write speed  :   2822k , 16.0xC",
+		" Write speed  :   1764k , 10.0xC",
+		" Write speed h:   4234k , 24.0xC",
+		" Write speed L:   1764k , 10.0xC",
+		" Write speed H:   4234k , 24.0xC",
 		"some other line",
 	}
 
