@@ -109,6 +109,7 @@
     "title": "Information",
     "subtitle": "About xorriso-ui application",
     "appVersion": "Application version",
+    "language": "Language",
     "hotkeys": "Keyboard shortcuts",
     "hotkeyNavigate": "Navigate files",
     "hotkeyExpand": "Expand directory",

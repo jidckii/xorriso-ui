@@ -6,6 +6,7 @@ import { useThemeStore } from '../../stores/themeStore'
 import { useTabStore } from '../../stores/tabStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { SaveSettings, GetSettings } from '../../../bindings/xorriso-ui/services/settingsservice.js'
+import { Languages } from 'lucide-vue-next'
 import Button from '../ui/Button.vue'
 
 const { t, locale } = useI18n()
@@ -15,14 +16,23 @@ const themeStore = useThemeStore()
 const tabStore = useTabStore()
 const projectStore = useProjectStore()
 
-async function toggleLanguage() {
-  const newLang = locale.value === 'ru' ? 'en' : 'ru'
-  locale.value = newLang
-  localStorage.setItem('xorriso-language', newLang)
+import { ref } from 'vue'
+
+const langMenuOpen = ref(false)
+
+const languages = [
+  { code: 'en', label: 'English' },
+  { code: 'ru', label: 'Русский' },
+]
+
+async function setLanguage(code) {
+  locale.value = code
+  langMenuOpen.value = false
+  localStorage.setItem('xorriso-language', code)
   try {
     const settings = await GetSettings()
     if (settings) {
-      settings.language = newLang
+      settings.language = code
       await SaveSettings(settings)
     }
   } catch (e) {
@@ -124,14 +134,31 @@ function toggleDiscInfo() {
     <!-- Spacer -->
     <div class="flex-1" />
 
-    <!-- Language toggle -->
-    <button
-      @click="toggleLanguage"
-      class="px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs font-medium text-gray-600 dark:text-gray-400 uppercase"
-      :title="locale === 'ru' ? 'Switch to English' : 'Переключить на русский'"
-    >
-      {{ locale === 'ru' ? 'EN' : 'RU' }}
-    </button>
+    <!-- Language selector -->
+    <div class="relative">
+      <button
+        @click="langMenuOpen = !langMenuOpen"
+        class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
+        :title="t('info.language')"
+      >
+        <Languages :size="20" />
+      </button>
+      <div
+        v-if="langMenuOpen"
+        class="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-lg z-50 min-w-[120px] py-1"
+        @mouseleave="langMenuOpen = false"
+      >
+        <button
+          v-for="lang in languages"
+          :key="lang.code"
+          @click="setLanguage(lang.code)"
+          class="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          :class="locale === lang.code ? 'text-blue-500 font-medium' : 'text-gray-700 dark:text-gray-300'"
+        >
+          {{ lang.label }}
+        </button>
+      </div>
+    </div>
 
     <!-- Theme toggle -->
     <button
@@ -148,12 +175,15 @@ function toggleDiscInfo() {
       </svg>
     </button>
 
-    <!-- Info -->
+    <!-- Info toggle -->
     <button
       @click="route.path === '/settings' ? router.push('/') : router.push('/settings')"
-      class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+      class="p-2 rounded transition-colors"
+      :class="route.path === '/settings'
+        ? 'bg-blue-600 text-white hover:bg-blue-500'
+        : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'"
     >
-      <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="10" stroke-width="2" />
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4m0-4h.01" />
       </svg>

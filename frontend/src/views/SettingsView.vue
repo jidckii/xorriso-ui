@@ -1,11 +1,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { GetToolsInfo, GetAppVersion } from '../../bindings/xorriso-ui/services/settingsservice.js'
 
 const { t } = useI18n()
-const router = useRouter()
 
 const toolsInfo = ref([])
 const appVersion = ref('')
@@ -21,10 +19,6 @@ const hotkeys = [
   { keys: ['Ctrl + L'], action: 'info.hotkeyEditPath' },
   { keys: ['Tab'], action: 'info.hotkeyFocusPanel' },
 ]
-
-function goBack() {
-  router.push('/')
-}
 
 async function loadToolsInfo() {
   try {
@@ -52,19 +46,9 @@ loadAppVersion()
   <div class="h-full overflow-y-auto">
     <div class="max-w-2xl mx-auto p-6 space-y-8">
 
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-xl font-semibold">{{ t('info.title') }}</h1>
-          <p class="text-sm text-gray-500 mt-1">{{ t('info.subtitle') }}</p>
-        </div>
-        <button
-          @click="goBack"
-          class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        >
-          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+      <div>
+        <h1 class="text-xl font-semibold">{{ t('info.title') }}</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ t('info.subtitle') }}</p>
       </div>
 
       <!-- App version -->

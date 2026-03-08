@@ -109,6 +109,7 @@
     "title": "Информация",
     "subtitle": "Информация о приложении xorriso-ui",
     "appVersion": "Версия приложения",
+    "language": "Язык",
     "hotkeys": "Горячие клавиши",
     "hotkeyNavigate": "Навигация по файлам",
     "hotkeyExpand": "Раскрыть директорию",
