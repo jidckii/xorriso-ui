@@ -315,8 +315,8 @@ const canBurn = computed(() => {
                 class="appearance-none w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 pr-8 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
               >
                 <option value="auto">{{ t('common.auto') }}</option>
-                <option v-for="s in speeds" :key="s.value" :value="s.value">
-                  {{ s.label }}
+                <option v-for="s in speeds" :key="s.writeSpeed" :value="s.writeSpeed">
+                  {{ s.displayName }}
                 </option>
               </select>
               <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">

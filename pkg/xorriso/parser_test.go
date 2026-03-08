@@ -215,28 +215,36 @@ func TestParseDevices_Empty(t *testing.T) {
 
 func TestParseSpeeds(t *testing.T) {
 	lines := []string{
-		"Write speed  :   4234kB/s  (BD  1x)",
-		"Write speed  :   8468kB/s  (BD  2x)",
+		"Write speed  :   4233k , 24.0xC",
+		"Write speed  :   2822k , 16.0xC",
+		"Write speed  :   1764k , 10.0xC",
+		"Write speed h:   4234k , 24.0xC",
+		"Write speed L:   1764k , 10.0xC",
+		"Write speed H:   4234k , 24.0xC",
 		"some other line",
 	}
 
 	speeds := ParseSpeeds(lines)
-	if len(speeds) != 2 {
-		t.Fatalf("expected 2 speeds, got %d", len(speeds))
+	if len(speeds) != 3 {
+		t.Fatalf("expected 3 speeds, got %d", len(speeds))
 	}
 
-	if speeds[0].WriteSpeed != 4234 {
-		t.Errorf("speed 0: expected WriteSpeed=4234, got %f", speeds[0].WriteSpeed)
+	if speeds[0].WriteSpeed != 4233 {
+		t.Errorf("speed 0: expected WriteSpeed=4233, got %f", speeds[0].WriteSpeed)
 	}
-	if speeds[0].DisplayName != "BD  1x" {
-		t.Errorf("speed 0: expected DisplayName=%q, got %q", "BD  1x", speeds[0].DisplayName)
+	if speeds[0].DisplayName != "24.0xC" {
+		t.Errorf("speed 0: expected DisplayName=%q, got %q", "24.0xC", speeds[0].DisplayName)
 	}
 
-	if speeds[1].WriteSpeed != 8468 {
-		t.Errorf("speed 1: expected WriteSpeed=8468, got %f", speeds[1].WriteSpeed)
+	if speeds[1].WriteSpeed != 2822 {
+		t.Errorf("speed 1: expected WriteSpeed=2822, got %f", speeds[1].WriteSpeed)
 	}
-	if speeds[1].DisplayName != "BD  2x" {
-		t.Errorf("speed 1: expected DisplayName=%q, got %q", "BD  2x", speeds[1].DisplayName)
+	if speeds[1].DisplayName != "16.0xC" {
+		t.Errorf("speed 1: expected DisplayName=%q, got %q", "16.0xC", speeds[1].DisplayName)
+	}
+
+	if speeds[2].WriteSpeed != 1764 {
+		t.Errorf("speed 2: expected WriteSpeed=1764, got %f", speeds[2].WriteSpeed)
 	}
 }
 

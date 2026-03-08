@@ -83,13 +83,14 @@ func ParseDevices(lines []string) []models.Device {
 }
 
 // ParseSpeeds parses output of -list_speeds
-// Lines like: "Write speed  :   4234kB/s  (BD  1x)"
-var speedLineRe = regexp.MustCompile(`(\d+)kB/s\s+\(([^)]+)\)`)
+// pkt_output format: "Write speed  :   4233k , 24.0xC"
+// Lines with suffixes (h, L, H, 0) are aggregates — skip them.
+var speedLineRe = regexp.MustCompile(`^Write speed\s+:\s+(\d+)k\s*,\s*(.+)$`)
 
 func ParseSpeeds(lines []string) []models.SpeedDescriptor {
 	var speeds []models.SpeedDescriptor
 	for _, line := range lines {
-		if !strings.Contains(line, "kB/s") {
+		if !strings.HasPrefix(line, "Write speed  :") {
 			continue
 		}
 		matches := speedLineRe.FindStringSubmatch(line)
@@ -97,9 +98,10 @@ func ParseSpeeds(lines []string) []models.SpeedDescriptor {
 			continue
 		}
 		kbps, _ := strconv.ParseFloat(matches[1], 64)
+		label := strings.TrimSpace(matches[2])
 		speeds = append(speeds, models.SpeedDescriptor{
 			WriteSpeed:  kbps,
-			DisplayName: strings.TrimSpace(matches[2]),
+			DisplayName: label,
 		})
 	}
 	return speeds
