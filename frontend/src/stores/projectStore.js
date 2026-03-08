@@ -14,6 +14,7 @@ import {
   ListMountPoints,
   GetImagePreview,
   OpenWithDefault,
+  RevealInFileManager,
   GetFileProperties,
 } from '../../bindings/xorriso-ui/services/projectservice.js'
 import { useTabStore } from './tabStore'
@@ -156,6 +157,14 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  async function revealInFileManager(filePath) {
+    try {
+      await RevealInFileManager(filePath)
+    } catch (error) {
+      console.error('Failed to reveal in file manager:', error)
+    }
+  }
+
   async function getFileProperties(filePath) {
     try {
       return await GetFileProperties(filePath)
@@ -180,6 +189,7 @@ export const useProjectStore = defineStore('project', () => {
     listMountPoints,
     getImagePreview,
     openWithDefault,
+    revealInFileManager,
     getFileProperties,
     formatBytes,
   }

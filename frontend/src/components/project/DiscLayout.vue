@@ -2,7 +2,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { ExternalLink, Trash2, Info } from 'lucide-vue-next'
+import { ExternalLink, FolderOpen, Trash2, Info } from 'lucide-vue-next'
 import PanelHeader from '../ui/PanelHeader.vue'
 import DiscLayoutTree from './DiscLayoutTree.vue'
 import DiscLayoutToolbar from './DiscLayoutToolbar.vue'
@@ -169,6 +169,7 @@ const contextMenuItems = computed(() => {
   const items = []
   if (contextMenu.entry.sourcePath) {
     items.push({ label: t('contextMenu.open'), icon: ExternalLink, action: 'open' })
+    items.push({ label: t('contextMenu.revealInFileManager'), icon: FolderOpen, action: 'reveal' })
   }
   items.push({ label: t('contextMenu.removeFromProject'), icon: Trash2, action: 'remove' })
   if (contextMenu.entry.sourcePath) {
@@ -195,6 +196,11 @@ function onContextMenuSelect(action) {
     case 'open':
       if (entry.sourcePath) {
         projectStore.openWithDefault(entry.sourcePath)
+      }
+      break
+    case 'reveal':
+      if (entry.sourcePath) {
+        projectStore.revealInFileManager(entry.sourcePath)
       }
       break
     case 'remove':

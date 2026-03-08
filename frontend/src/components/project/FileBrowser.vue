@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ExternalLink, Info, FolderPlus } from 'lucide-vue-next'
+import { ExternalLink, FolderOpen, Info, FolderPlus } from 'lucide-vue-next'
 import FileBrowserItem from './FileBrowserItem.vue'
 import FileBrowserToolbar from './FileBrowserToolbar.vue'
 import FileBrowserSelectionBar from './FileBrowserSelectionBar.vue'
@@ -228,6 +228,7 @@ const contextMenuItems = computed(() => {
   if (!contextMenu.entry) return []
   const items = [
     { label: t('contextMenu.open'), icon: ExternalLink, action: 'open' },
+    { label: t('contextMenu.revealInFileManager'), icon: FolderOpen, action: 'reveal' },
     { label: t('contextMenu.addToProject'), icon: FolderPlus, action: 'add' },
     { separator: true },
     { label: t('contextMenu.properties'), icon: Info, action: 'properties' },
@@ -251,6 +252,9 @@ function onContextMenuSelect(action) {
   switch (action) {
     case 'open':
       projectStore.openWithDefault(entry.sourcePath)
+      break
+    case 'reveal':
+      projectStore.revealInFileManager(entry.sourcePath)
       break
     case 'add':
       if (currentProject.value) {

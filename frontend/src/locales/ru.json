@@ -215,6 +215,7 @@
   "contextMenu": {
     "open": "Открыть",
     "addToProject": "Добавить в проект",
+    "revealInFileManager": "Открыть в проводнике",
     "removeFromProject": "Удалить из проекта",
     "properties": "Свойства"
   },

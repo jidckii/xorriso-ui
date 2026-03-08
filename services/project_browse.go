@@ -154,3 +154,19 @@ func (s *ProjectService) OpenWithDefault(filePath string) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return cmd.Start()
 }
+
+// RevealInFileManager opens the system file manager showing the parent directory of a file,
+// or the directory itself if the path is a directory.
+func (s *ProjectService) RevealInFileManager(filePath string) error {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+	dir := filePath
+	if !info.IsDir() {
+		dir = filepath.Dir(filePath)
+	}
+	cmd := exec.Command("xdg-open", dir)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	return cmd.Start()
+}
