@@ -205,7 +205,8 @@
     "newProject": "Новый проект",
     "discInfo": "Информация о диске",
     "closeTab": "Закрыть вкладку",
-    "untitledProject": "Безымянный проект"
+    "untitledProject": "Безымянный проект",
+    "renameTab": "Двойной клик для переименования"
   },
   "contextMenu": {
     "open": "Открыть",

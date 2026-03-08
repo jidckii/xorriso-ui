@@ -20,8 +20,9 @@ const isMainView = computed(() => route.path === '/')
 onMounted(async () => {
   deviceStore.init()
   if (tabStore.tabs.length === 0) {
-    const tabId = tabStore.addProjectTab('Untitled Project', 'UNTITLED')
-    await projectStore.newProject(tabId, 'Untitled Project', 'UNTITLED')
+    const tabId = tabStore.addProjectTab()
+    const tab = tabStore.tabs.find(t => t.id === tabId)
+    await projectStore.newProject(tabId, tab.label, tab.label)
   }
 })
 </script>

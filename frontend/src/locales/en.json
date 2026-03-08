@@ -205,7 +205,8 @@
     "newProject": "New Project",
     "discInfo": "Disc Info",
     "closeTab": "Close tab",
-    "untitledProject": "Untitled Project"
+    "untitledProject": "Untitled Project",
+    "renameTab": "Double-click to rename"
   },
   "contextMenu": {
     "open": "Open",

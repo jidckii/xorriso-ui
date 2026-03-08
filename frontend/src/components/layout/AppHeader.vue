@@ -41,9 +41,9 @@ async function setLanguage(code) {
 }
 
 async function newProject() {
-  const name = t('tabs.untitledProject')
-  const tabId = tabStore.addProjectTab(name, 'UNTITLED')
-  await projectStore.newProject(tabId, name, 'UNTITLED')
+  const tabId = tabStore.addProjectTab()
+  const tab = tabStore.tabs.find(t => t.id === tabId)
+  await projectStore.newProject(tabId, tab.label, tab.label)
 }
 
 async function openProject() {

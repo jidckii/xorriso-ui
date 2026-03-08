@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 let nextTabId = 1
+let nextDiscId = 1
 
-function createProjectData(name = 'Untitled Project', volumeId = 'UNTITLED') {
+function createProjectData(name = 'DISC_1', volumeId = 'DISC_1') {
   return {
     version: 1,
     name,
@@ -66,12 +67,19 @@ export const useTabStore = defineStore('tabs', () => {
     activeTab.value?.projectData || null
   )
 
+  function nextDiscName() {
+    const name = `DISC_${nextDiscId++}`
+    return name
+  }
+
   function addProjectTab(name, volumeId) {
     const id = `tab-${nextTabId++}`
+    const discName = name || nextDiscName()
+    const discVolumeId = volumeId || discName
     tabs.value.push({
       id,
-      label: name || 'Untitled Project',
-      projectData: createProjectData(name, volumeId),
+      label: discName,
+      projectData: createProjectData(discName, discVolumeId),
     })
     activeTabId.value = id
     return id
