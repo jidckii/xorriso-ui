@@ -8,17 +8,20 @@ import ProjectView from './views/ProjectView.vue'
 import DiscInfoView from './views/DiscInfoView.vue'
 import { useTabStore } from './stores/tabStore'
 import { useDeviceStore } from './stores/deviceStore'
+import { useProjectStore } from './stores/projectStore'
 
 const route = useRoute()
 const tabStore = useTabStore()
 const deviceStore = useDeviceStore()
+const projectStore = useProjectStore()
 
 const isMainView = computed(() => route.path === '/')
 
-onMounted(() => {
+onMounted(async () => {
   deviceStore.init()
   if (tabStore.tabs.length === 0) {
-    tabStore.addProjectTab('Untitled Project', 'UNTITLED')
+    const tabId = tabStore.addProjectTab('Untitled Project', 'UNTITLED')
+    await projectStore.newProject(tabId, 'Untitled Project', 'UNTITLED')
   }
 })
 </script>

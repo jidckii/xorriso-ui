@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { TreeRoot, TreeItem } from 'reka-ui'
 import { ChevronRight } from 'lucide-vue-next'
 import FileIcon from '../ui/FileIcon.vue'
+import ImagePreviewTooltip from '../ui/ImagePreviewTooltip.vue'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTabStore } from '../../stores/tabStore'
 
@@ -89,6 +90,38 @@ function getChildren(item) {
   if (!item.children || item.children.length === 0) return undefined
   return item.children
 }
+
+// Image preview tooltip
+const previewVisible = ref(false)
+const previewX = ref(0)
+const previewY = ref(0)
+const previewSourcePath = ref('')
+
+const imageExts = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'])
+
+function isImageFile(name) {
+  if (!name) return false
+  const dot = name.lastIndexOf('.')
+  if (dot < 0) return false
+  return imageExts.has(name.substring(dot).toLowerCase())
+}
+
+function onItemMouseEnter(e, item) {
+  if (item.isDir || !item.sourcePath || !isImageFile(item.name)) return
+  previewSourcePath.value = item.sourcePath
+  previewX.value = e.clientX
+  previewY.value = e.clientY
+  previewVisible.value = true
+}
+
+function onItemMouseMove(e) {
+  previewX.value = e.clientX
+  previewY.value = e.clientY
+}
+
+function onItemMouseLeave() {
+  previewVisible.value = false
+}
 </script>
 
 <template>
@@ -139,6 +172,9 @@ function getChildren(item) {
             v-bind="item.bind"
             class="flex items-center gap-1.5 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors outline-none data-[selected]:bg-blue-900/20"
             :style="{ paddingLeft: (item.level * 16 + 8) + 'px', paddingRight: '8px' }"
+            @mouseenter="onItemMouseEnter($event, item.value)"
+            @mousemove="onItemMouseMove"
+            @mouseleave="onItemMouseLeave"
           >
             <template #default="{ isExpanded, isSelected }">
               <!-- Expand chevron -->
@@ -150,6 +186,14 @@ function getChildren(item) {
                   :class="{ 'rotate-90': isExpanded }"
                 />
               </span>
+
+              <!-- Selection checkbox -->
+              <input
+                type="checkbox"
+                :checked="isSelected"
+                class="w-3.5 h-3.5 accent-blue-600 shrink-0 cursor-pointer"
+                @click.stop
+              />
 
               <!-- File/folder icon -->
               <FileIcon
@@ -165,13 +209,21 @@ function getChildren(item) {
               </span>
 
               <!-- Size -->
-              <span v-if="!item.value.isDir && item.value.size" class="text-xs text-gray-500 shrink-0 ml-2">
+              <span v-if="item.value.size" class="text-xs text-gray-500 shrink-0 ml-2">
                 {{ formatBytes(item.value.size) }}
               </span>
             </template>
           </TreeItem>
         </template>
       </TreeRoot>
+
+      <!-- Image preview tooltip -->
+      <ImagePreviewTooltip
+        :file-path="previewSourcePath"
+        :visible="previewVisible"
+        :x="previewX"
+        :y="previewY"
+      />
     </div>
 
     <!-- Toolbar -->

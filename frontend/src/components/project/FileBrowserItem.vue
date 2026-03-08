@@ -88,6 +88,13 @@ function onMouseLeave() {
     </button>
     <span v-else class="w-4 h-4 shrink-0" />
 
+    <input
+      type="checkbox"
+      :checked="isSelected(entry)"
+      @click.stop="emit('toggle-selection', entry, { ctrlKey: true })"
+      class="w-3.5 h-3.5 accent-blue-600 shrink-0 cursor-pointer"
+    />
+
     <!-- Icon -->
     <FileIcon
       :name="entry.name"

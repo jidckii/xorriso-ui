@@ -1,4 +1,5 @@
 <script setup>
+import { Dialogs } from '@wailsio/runtime'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../../stores/themeStore'
@@ -12,13 +13,38 @@ const themeStore = useThemeStore()
 const tabStore = useTabStore()
 const projectStore = useProjectStore()
 
-function newProject() {
-  tabStore.addProjectTab(t('tabs.untitledProject'), 'UNTITLED')
+async function newProject() {
+  const name = t('tabs.untitledProject')
+  const tabId = tabStore.addProjectTab(name, 'UNTITLED')
+  await projectStore.newProject(tabId, name, 'UNTITLED')
 }
 
-function saveProject() {
-  if (tabStore.activeTab?.type === 'project') {
-    projectStore.saveProject(tabStore.activeTabId)
+async function openProject() {
+  const filePath = await Dialogs.OpenFile({
+    Title: t('header.open'),
+    Filters: [{ DisplayName: 'Xorriso Project', Pattern: '*.xorriso-project' }],
+    CanChooseFiles: true,
+  })
+  if (!filePath) return
+  const tabId = tabStore.addProjectTab('Loading...', '')
+  await projectStore.openProject(tabId, filePath)
+}
+
+async function saveProject() {
+  const tabId = tabStore.activeTabId
+  const data = tabStore.getProjectData(tabId)
+  if (!data) return
+
+  if (data.filePath) {
+    await projectStore.saveProject(tabId)
+  } else {
+    const filePath = await Dialogs.SaveFile({
+      Title: t('header.save'),
+      Filename: (data.name || 'project') + '.xorriso-project',
+      Filters: [{ DisplayName: 'Xorriso Project', Pattern: '*.xorriso-project' }],
+    })
+    if (!filePath) return
+    await projectStore.saveProjectAs(tabId, filePath)
   }
 }
 
@@ -51,7 +77,7 @@ function toggleDiscInfo() {
         </svg>
         {{ t('header.new') }}
       </Button>
-      <Button variant="ghost" size="sm">
+      <Button variant="ghost" size="sm" @click="openProject">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />

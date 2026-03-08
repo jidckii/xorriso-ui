@@ -132,23 +132,32 @@ async function toggleExpand(entry) {
   }
 }
 
-// Selection (multi-select with Ctrl/Cmd)
+// Selection (always toggle mode for multi-select)
 function toggleSelection(entry, event) {
   const key = entry.sourcePath
-  if (event.ctrlKey || event.metaKey) {
-    // Toggle individual item
-    if (selectedPaths.value.has(key)) {
-      selectedPaths.value.delete(key)
-    } else {
-      selectedPaths.value.add(key)
-    }
-    selectedPaths.value = new Set(selectedPaths.value)
+  if (selectedPaths.value.has(key)) {
+    selectedPaths.value.delete(key)
   } else {
-    // Replace selection
-    selectedPaths.value = new Set([key])
+    selectedPaths.value.add(key)
   }
+  selectedPaths.value = new Set(selectedPaths.value)
   syncSelection()
 }
+
+function selectAll() {
+  selectedPaths.value = new Set(filteredEntries.value.map(e => e.sourcePath))
+  syncSelection()
+}
+
+function deselectAll() {
+  selectedPaths.value = new Set()
+  syncSelection()
+}
+
+const allSelected = computed(() =>
+  filteredEntries.value.length > 0 &&
+  filteredEntries.value.every(e => selectedPaths.value.has(e.sourcePath))
+)
 
 function syncSelection() {
   if (currentProject.value) {
@@ -376,6 +385,15 @@ watch(tabId, async () => {
 
     <!-- Toolbar -->
     <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
+      <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          :checked="allSelected"
+          @change="allSelected ? deselectAll() : selectAll()"
+          class="w-3.5 h-3.5 accent-blue-600 cursor-pointer"
+        />
+        {{ t('project.selectAll') }}
+      </label>
       <button
         @click="addSelectedToProject"
         :disabled="selectedPaths.size === 0"

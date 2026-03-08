@@ -1,17 +1,21 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { useTabStore } from '../../stores/tabStore'
+import { useProjectStore } from '../../stores/projectStore'
 
 const { t } = useI18n()
 const tabStore = useTabStore()
+const projectStore = useProjectStore()
 
 function closeTab(tabId, event) {
   event.stopPropagation()
   tabStore.removeTab(tabId)
 }
 
-function newTab() {
-  tabStore.addProjectTab(t('tabs.untitledProject'), 'UNTITLED')
+async function newTab() {
+  const name = t('tabs.untitledProject')
+  const tabId = tabStore.addProjectTab(name, 'UNTITLED')
+  await projectStore.newProject(tabId, name, 'UNTITLED')
 }
 </script>
 

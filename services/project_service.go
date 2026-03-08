@@ -137,7 +137,8 @@ func (s *ProjectService) BrowseDirectory(path string) ([]models.FileEntry, error
 	return result, nil
 }
 
-// AddFiles adds files/directories to the project
+// AddFiles adds files/directories to the project.
+// Directories are added recursively — each file inside gets its own entry.
 func (s *ProjectService) AddFiles(project *models.Project, sourcePaths []string, destDir string) (*models.Project, error) {
 	for _, src := range sourcePaths {
 		info, err := os.Stat(src)
@@ -145,21 +146,43 @@ func (s *ProjectService) AddFiles(project *models.Project, sourcePaths []string,
 			continue
 		}
 
-		destPath := filepath.Join(destDir, filepath.Base(src))
-		entry := models.FileEntry{
-			SourcePath: src,
-			DestPath:   destPath,
-			Name:       filepath.Base(src),
-			IsDir:      info.IsDir(),
-			Size:       info.Size(),
-		}
-
 		if info.IsDir() {
+			// Add directory entry itself
 			size, _ := dirSize(src)
-			entry.Size = size
-		}
+			dirEntry := models.FileEntry{
+				SourcePath: src,
+				DestPath:   filepath.Join(destDir, filepath.Base(src)),
+				Name:       filepath.Base(src),
+				IsDir:      true,
+				Size:       size,
+			}
+			project.Entries = append(project.Entries, dirEntry)
 
-		project.Entries = append(project.Entries, entry)
+			// Recursively add all files inside
+			baseDest := filepath.Join(destDir, filepath.Base(src))
+			filepath.Walk(src, func(path string, fi os.FileInfo, err error) error {
+				if err != nil || path == src {
+					return nil
+				}
+				rel, _ := filepath.Rel(src, path)
+				project.Entries = append(project.Entries, models.FileEntry{
+					SourcePath: path,
+					DestPath:   filepath.Join(baseDest, rel),
+					Name:       fi.Name(),
+					IsDir:      fi.IsDir(),
+					Size:       fi.Size(),
+				})
+				return nil
+			})
+		} else {
+			project.Entries = append(project.Entries, models.FileEntry{
+				SourcePath: src,
+				DestPath:   filepath.Join(destDir, filepath.Base(src)),
+				Name:       filepath.Base(src),
+				IsDir:      false,
+				Size:       info.Size(),
+			})
+		}
 	}
 	project.UpdatedAt = time.Now()
 	return project, nil

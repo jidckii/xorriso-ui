@@ -1,9 +1,9 @@
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/themeStore'
-import { GetSettings, SaveSettings, GetXorrisoVersion } from '../../bindings/xorriso-ui/services/settingsservice.js'
+import { GetSettings, SaveSettings, GetToolsInfo } from '../../bindings/xorriso-ui/services/settingsservice.js'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -11,43 +11,12 @@ const themeStore = useThemeStore()
 
 // --- State ---
 const saving = ref(false)
-const saved = ref(false)
 const saveError = ref('')
-const xorrisoVersion = ref('')
-const xorrisoVersionError = ref(false)
+const toolsInfo = ref([])
 
 const settings = reactive({
   language: locale.value,
   theme: themeStore.currentTheme,
-  xorrisoBinaryPath: '/usr/bin/xorriso',
-  devicePollInterval: 5,
-  bdxlSafeMode: false,
-  defaultBurnOptions: {
-    speed: 'auto',
-    dummyMode: false,
-    verify: true,
-    closeDisc: false,
-    eject: true,
-    burnMode: 'auto',
-    streamRecording: false,
-  },
-  defaultIsoOptions: {
-    udf: true,
-    isoLevel: 3,
-    rockRidge: false,
-    joliet: false,
-    md5: true,
-    backupMode: false,
-  },
-})
-
-// BDXL safe mode auto-toggle
-watch(() => settings.bdxlSafeMode, (enabled) => {
-  if (enabled) {
-    settings.defaultIsoOptions.md5 = true
-    settings.defaultBurnOptions.verify = true
-    settings.defaultBurnOptions.streamRecording = true
-  }
 })
 
 // Apply language change immediately
@@ -66,18 +35,8 @@ async function loadSettings() {
   try {
     const result = await GetSettings()
     if (result) {
-      settings.xorrisoBinaryPath = result.xorrisoPath || '/usr/bin/xorriso'
-      settings.devicePollInterval = result.devicePollInterval || 5
-      settings.bdxlSafeMode = result.bdxlSafeMode || false
       settings.language = result.language || 'en'
       settings.theme = result.theme || 'dark'
-
-      if (result.defaultBurn) {
-        Object.assign(settings.defaultBurnOptions, result.defaultBurn)
-      }
-      if (result.defaultIso) {
-        Object.assign(settings.defaultIsoOptions, result.defaultIso)
-      }
     }
   } catch (error) {
     console.error('Failed to load settings:', error)
@@ -86,21 +45,13 @@ async function loadSettings() {
 
 async function saveSettings() {
   saving.value = true
-  saved.value = false
   saveError.value = ''
   try {
     await SaveSettings({
-      xorrisoPath: settings.xorrisoBinaryPath,
-      defaultBurn: { ...settings.defaultBurnOptions },
-      defaultIso: { ...settings.defaultIsoOptions },
-      bdxlSafeMode: settings.bdxlSafeMode,
-      autoEject: settings.defaultBurnOptions.eject,
-      devicePollInterval: settings.devicePollInterval,
       language: settings.language,
       theme: settings.theme,
     })
-    saved.value = true
-    setTimeout(() => { saved.value = false }, 3000)
+    goBack()
   } catch (error) {
     console.error('Failed to save settings:', error)
     saveError.value = String(error)
@@ -114,45 +65,39 @@ function goBack() {
   router.push('/')
 }
 
-async function loadXorrisoVersion() {
+async function loadToolsInfo() {
   try {
-    const version = await GetXorrisoVersion()
-    if (version) {
-      xorrisoVersion.value = version
-      xorrisoVersionError.value = false
-    } else {
-      xorrisoVersion.value = ''
-      xorrisoVersionError.value = true
+    const result = await GetToolsInfo()
+    if (result) {
+      toolsInfo.value = result
     }
   } catch (error) {
-    console.error('Failed to get xorriso version:', error)
-    xorrisoVersion.value = ''
-    xorrisoVersionError.value = true
+    console.error('Failed to get tools info:', error)
   }
 }
 
 // Load on mount
 loadSettings()
-loadXorrisoVersion()
+loadToolsInfo()
 </script>
 
 <template>
   <div class="h-full overflow-y-auto">
     <div class="max-w-2xl mx-auto p-6 space-y-8">
 
-      <div class="flex items-center gap-3">
-        <button
-          @click="goBack"
-          class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+      <div class="flex items-center justify-between">
         <div>
           <h1 class="text-xl font-semibold">{{ t('settings.title') }}</h1>
           <p class="text-sm text-gray-500 mt-1">{{ t('settings.subtitle') }}</p>
         </div>
+        <button
+          @click="goBack"
+          class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
       <!-- Appearance -->
@@ -187,172 +132,26 @@ loadXorrisoVersion()
       <section class="space-y-3">
         <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.general') }}</h2>
 
+        <!-- External tools status -->
         <div>
-          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.xorrisoBinaryPath') }}</label>
-          <div class="flex items-center gap-3">
-            <input
-              v-model="settings.xorrisoBinaryPath"
-              type="text"
-              placeholder="/usr/bin/xorriso"
-              class="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:border-blue-500"
-            />
-            <span
-              v-if="xorrisoVersion && !xorrisoVersionError"
-              class="text-sm font-medium text-green-500 whitespace-nowrap"
-            >
-              {{ xorrisoVersion }}
-            </span>
-            <span
-              v-else-if="xorrisoVersionError"
-              class="text-sm font-medium text-red-500 whitespace-nowrap"
-            >
-              {{ t('settings.xorrisoNotFound') }}
-            </span>
-          </div>
-          <p class="text-xs text-gray-500 dark:text-gray-600 mt-1">{{ t('settings.xorrisoBinaryPathHelp') }}</p>
-        </div>
-
-        <div>
-          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.devicePollInterval') }}</label>
-          <input
-            v-model.number="settings.devicePollInterval"
-            type="number"
-            min="1"
-            max="60"
-            class="w-32 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
-          />
-          <p class="text-xs text-gray-500 dark:text-gray-600 mt-1">{{ t('settings.devicePollIntervalHelp') }}</p>
-        </div>
-      </section>
-
-      <!-- Default Filesystem Options -->
-      <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.defaultFsOptions') }}</h2>
-
-        <div class="space-y-3">
-          <div>
-            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.isoLevel') }}</label>
-            <select
-              v-model.number="settings.defaultIsoOptions.isoLevel"
-              class="w-48 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
-            >
-              <option :value="1">Level 1 — {{ t('settings.isoLevel1') }}</option>
-              <option :value="2">Level 2</option>
-              <option :value="3">Level 3 — {{ t('settings.isoLevel3') }}</option>
-              <option :value="4">Level 4</option>
-            </select>
-            <p class="text-xs text-gray-500 dark:text-gray-600 mt-1">{{ t('settings.isoLevelHelp') }}</p>
-          </div>
-
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultIsoOptions.rockRidge" class="accent-blue-500" />
-            {{ t('settings.rockRidge') }}
-          </label>
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultIsoOptions.joliet" class="accent-blue-500" />
-            {{ t('settings.joliet') }}
-          </label>
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultIsoOptions.udf" class="accent-blue-500" />
-            {{ t('settings.udf') }}
-          </label>
-          <label class="flex items-center gap-3 text-sm" :class="settings.bdxlSafeMode ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
-            <input type="checkbox" v-model="settings.defaultIsoOptions.md5" :disabled="settings.bdxlSafeMode" class="accent-blue-500" />
-            {{ t('settings.md5') }}
-            <span v-if="settings.bdxlSafeMode" class="text-xs px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-medium">BDXL</span>
-          </label>
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultIsoOptions.backupMode" class="accent-blue-500" />
-            {{ t('settings.backupMode') }}
-          </label>
-        </div>
-      </section>
-
-      <!-- Default Burn Options -->
-      <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.defaultBurnOptions') }}</h2>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.defaultSpeed') }}</label>
-            <select
-              v-model="settings.defaultBurnOptions.speed"
-              class="w-full px-2 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
-            >
-              <option value="auto">{{ t('settings.speedAuto') }}</option>
-              <option value="1">{{ t('settings.speed1x') }}</option>
-              <option value="2">{{ t('settings.speed2x') }}</option>
-              <option value="4">{{ t('settings.speed4x') }}</option>
-              <option value="8">{{ t('settings.speed8x') }}</option>
-              <option value="12">{{ t('settings.speed12x') }}</option>
-              <option value="16">{{ t('settings.speed16x') }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{ t('settings.defaultBurnMode') }}</label>
-            <select
-              v-model="settings.defaultBurnOptions.burnMode"
-              class="w-full px-2 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-600 rounded text-gray-900 dark:text-gray-200 focus:outline-none focus:border-blue-500"
-            >
-              <option value="auto">{{ t('burn.autoDao') }}</option>
-              <option value="tao">{{ t('burn.tao') }}</option>
-              <option value="sao">{{ t('burn.saoDao') }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="space-y-2 mt-2">
-          <label class="flex items-center gap-3 text-sm" :class="settings.bdxlSafeMode ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
-            <input type="checkbox" v-model="settings.defaultBurnOptions.verify" :disabled="settings.bdxlSafeMode" class="accent-blue-500" />
-            {{ t('burn.verifyAfterBurn') }}
-            <span v-if="settings.bdxlSafeMode" class="text-xs px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-medium">BDXL</span>
-          </label>
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultBurnOptions.eject" class="accent-blue-500" />
-            {{ t('burn.ejectWhenDone') }}
-          </label>
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultBurnOptions.dummyMode" class="accent-yellow-500" />
-            {{ t('burn.simulationMode') }}
-          </label>
-          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input type="checkbox" v-model="settings.defaultBurnOptions.closeDisc" class="accent-blue-500" />
-            {{ t('burn.closeDisc') }}
-          </label>
-          <label class="flex items-center gap-3 text-sm" :class="settings.bdxlSafeMode ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
-            <input type="checkbox" v-model="settings.defaultBurnOptions.streamRecording" :disabled="settings.bdxlSafeMode" class="accent-blue-500" />
-            {{ t('burn.streamRecording') }}
-            <span v-if="settings.bdxlSafeMode" class="text-xs px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-medium">BDXL</span>
-          </label>
-        </div>
-      </section>
-
-      <!-- BDXL Safe Mode -->
-      <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{{ t('settings.bluray') }}</h2>
-
-        <label class="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300">
-          <input type="checkbox" v-model="settings.bdxlSafeMode" class="accent-cyan-500 mt-0.5" />
-          <div>
-            <span class="font-medium">{{ t('settings.bdxlSafeMode') }}</span>
-            <p class="text-xs text-gray-500 mt-0.5">{{ t('settings.bdxlSafeModeDescription') }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">{{ t('settings.bdxlSafeModeDetails') }}</p>
-          </div>
-        </label>
-
-        <!-- Индикаторы форсированных опций при BDXL Safe Mode -->
-        <div v-if="settings.bdxlSafeMode" class="ml-6 mt-2 space-y-1.5">
-          <div class="flex items-center gap-2 text-xs text-cyan-400">
-            <span class="inline-block px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 font-medium">{{ t('settings.forced') }}</span>
-            <span>{{ t('settings.md5') }}</span>
-          </div>
-          <div class="flex items-center gap-2 text-xs text-cyan-400">
-            <span class="inline-block px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 font-medium">{{ t('settings.forced') }}</span>
-            <span>{{ t('burn.verifyAfterBurn') }}</span>
-          </div>
-          <div class="flex items-center gap-2 text-xs text-cyan-400">
-            <span class="inline-block px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 font-medium">{{ t('settings.forced') }}</span>
-            <span>{{ t('burn.streamRecording') }}</span>
+          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.externalTools') }}</label>
+          <div class="space-y-2">
+            <div v-for="tool in toolsInfo" :key="tool.name" class="flex items-center gap-3">
+              <span
+                class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
+                :class="tool.found ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+              >
+                <svg v-if="tool.found" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ tool.name }}</span>
+              <span v-if="tool.found" class="text-xs text-gray-500 dark:text-gray-500">{{ tool.version }}</span>
+              <span v-else class="text-xs text-red-400">{{ t('settings.toolNotFound') }}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -366,7 +165,6 @@ loadXorrisoVersion()
         >
           {{ saving ? t('settings.saving') : t('settings.saveSettings') }}
         </button>
-        <span v-if="saved" class="text-sm text-green-400">{{ t('settings.savedSuccessfully') }}</span>
         <span v-if="saveError" class="text-sm text-red-400">{{ saveError }}</span>
       </div>
     </div>
