@@ -29,6 +29,7 @@ depends:
   - libgtk-3-0
   - libwebkit2gtk-4.1-0
   - xorriso
+  - mkisofs
   - ffmpeg
 
 overrides:
@@ -38,6 +39,7 @@ overrides:
       - "libgtk-3.so.0()(64bit)"
       - "libwebkit2gtk-4.1.so.0()(64bit)"
       - xorriso
+      - mkisofs
       - ffmpeg
   
   # Arch Linux packages (WebKit 4.1)  
@@ -46,6 +48,7 @@ overrides:
       - gtk3
       - webkit2gtk-4.1
       - xorriso
+      - mkisofs
       - ffmpeg
 
 # scripts section to ensure desktop database is updated after install
