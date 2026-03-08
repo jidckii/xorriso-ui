@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Dialogs } from '@wailsio/runtime'
 import { ExternalLink, FolderOpen, Trash2, Info } from 'lucide-vue-next'
 import PanelHeader from '../ui/PanelHeader.vue'
 import DiscLayoutTree from './DiscLayoutTree.vue'
@@ -164,13 +165,20 @@ function countAllItems(items) {
   return count
 }
 
-function goToBurn() {
-  tabStore.openBurn()
+async function openProject() {
+  const filePath = await Dialogs.OpenFile({
+    Title: t('header.open'),
+    Filters: [{ DisplayName: 'Xorriso Project', Pattern: '*.xorriso-project' }],
+    CanChooseFiles: true,
+  })
+  if (!filePath) return
+  const newTabId = tabStore.addProjectTab('Loading...', '')
+  await projectStore.openProject(newTabId, filePath)
 }
 
-const canBurn = computed(() => {
-  return currentProject.value && currentProject.value.entries.length > 0
-})
+async function saveProject() {
+  tabStore.openBurnModal('save')
+}
 
 // Drag-and-Drop обработчики
 function onDragOver(event) {
@@ -356,11 +364,11 @@ const propertiesModal = reactive({
     <DiscLayoutToolbar
       :all-selected="allSelected"
       :selected-count="selectedCount"
-      :can-burn="canBurn"
       @select-all="selectAll"
       @deselect-all="deselectAll"
       @remove-selected="removeSelectedFromProject"
-      @go-to-burn="goToBurn"
+      @open-project="openProject"
+      @save-project="saveProject"
     />
   </div>
 </template>

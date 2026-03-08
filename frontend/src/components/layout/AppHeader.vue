@@ -1,22 +1,15 @@
 <script setup>
-import { Dialogs } from '@wailsio/runtime'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '../../stores/themeStore'
-import { useTabStore } from '../../stores/tabStore'
-import { useProjectStore } from '../../stores/projectStore'
 import { SaveSettings, GetSettings } from '../../../bindings/xorriso-ui/services/settingsservice.js'
 import { Languages } from 'lucide-vue-next'
-import Button from '../ui/Button.vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const themeStore = useThemeStore()
-const tabStore = useTabStore()
-const projectStore = useProjectStore()
-
-import { ref } from 'vue'
 
 const langMenuOpen = ref(false)
 
@@ -39,50 +32,11 @@ async function setLanguage(code) {
     console.error('Failed to save language:', e)
   }
 }
-
-async function newProject() {
-  const tabId = tabStore.addProjectTab()
-  const tab = tabStore.tabs.find(t => t.id === tabId)
-  await projectStore.newProject(tabId, tab.label, tab.label)
-}
-
-async function openProject() {
-  const filePath = await Dialogs.OpenFile({
-    Title: t('header.open'),
-    Filters: [{ DisplayName: 'Xorriso Project', Pattern: '*.xorriso-project' }],
-    CanChooseFiles: true,
-  })
-  if (!filePath) return
-  const tabId = tabStore.addProjectTab('Loading...', '')
-  await projectStore.openProject(tabId, filePath)
-}
-
-async function saveProject() {
-  const tabId = tabStore.activeTabId
-  const data = tabStore.getProjectData(tabId)
-  if (!data) return
-
-  if (data.filePath) {
-    await projectStore.saveProject(tabId)
-  } else {
-    const filePath = await Dialogs.SaveFile({
-      Title: t('header.save'),
-      Filename: (data.name || 'project') + '.xorriso-project',
-      Filters: [{ DisplayName: 'Xorriso Project', Pattern: '*.xorriso-project' }],
-    })
-    if (!filePath) return
-    await projectStore.saveProjectAs(tabId, filePath)
-  }
-}
-
-function toggleDiscInfo() {
-  tabStore.toggleDiscInfo()
-}
 </script>
 
 <template>
   <header class="bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 px-4 py-2 flex items-center gap-4">
-    <!-- App name -->
+    <!-- Логотип -->
     <div class="flex items-center gap-2 mr-4">
       <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="10" stroke-width="1.5" />
@@ -90,45 +44,6 @@ function toggleDiscInfo() {
         <circle cx="12" cy="12" r="6" stroke-width="0.5" opacity="0.5" />
       </svg>
       <span class="text-lg font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">xorriso-ui</span>
-    </div>
-
-    <!-- Toolbar buttons -->
-    <div class="flex items-center gap-1">
-      <Button variant="ghost" size="sm" @click="newProject">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        {{ t('header.new') }}
-      </Button>
-      <Button variant="ghost" size="sm" @click="openProject">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-        </svg>
-        {{ t('header.open') }}
-      </Button>
-      <Button variant="ghost" size="sm" @click="saveProject">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-        </svg>
-        {{ t('header.save') }}
-      </Button>
-
-      <div class="w-px h-6 bg-gray-300 dark:bg-gray-700 mx-2" />
-
-      <!-- Disc Info toggle -->
-      <Button
-        :variant="tabStore.showDiscInfo ? 'primary' : 'ghost'"
-        size="sm"
-        @click="toggleDiscInfo"
-      >
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" stroke-width="1.5" />
-          <circle cx="12" cy="12" r="3" stroke-width="1.5" />
-        </svg>
-        {{ t('tabs.discInfo') }}
-      </Button>
     </div>
 
     <!-- Spacer -->
@@ -175,7 +90,7 @@ function toggleDiscInfo() {
       </svg>
     </button>
 
-    <!-- Info toggle -->
+    <!-- Settings button -->
     <button
       @click="route.path === '/settings' ? router.push('/') : router.push('/settings')"
       class="p-2 rounded transition-colors"

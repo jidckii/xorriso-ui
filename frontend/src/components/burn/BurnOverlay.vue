@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Dialogs } from '@wailsio/runtime'
 import { useTabStore } from '../../stores/tabStore'
 import { useDeviceStore } from '../../stores/deviceStore'
 import { useBurnStore } from '../../stores/burnStore'
+import { useProjectStore } from '../../stores/projectStore'
 import BurnSimpleMode from './BurnSimpleMode.vue'
 import BurnExpertMode from './BurnExpertMode.vue'
 import BurnRunning from './BurnRunning.vue'
@@ -12,9 +13,14 @@ import BurnResult from './BurnResult.vue'
 
 const { t } = useI18n()
 
+const props = defineProps({
+  mode: { type: String, default: 'burn' },
+})
+
 const tabStore = useTabStore()
 const deviceStore = useDeviceStore()
 const burnStore = useBurnStore()
+const projectStore = useProjectStore()
 
 const emit = defineEmits(['close'])
 
@@ -50,11 +56,23 @@ const phaseLabel = computed(() => {
 })
 
 // --- Жизненный цикл ---
+
+function onKeydown(e) {
+  if (e.key === 'Escape') {
+    handleClose()
+  }
+}
+
 onMounted(() => {
+  document.addEventListener('keydown', onKeydown)
   burnStore.init()
   if (!deviceStore.speeds?.length && deviceStore.currentDevicePath) {
     deviceStore.fetchSpeeds()
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown)
 })
 
 // --- Действия записи ---
@@ -82,9 +100,11 @@ function burnAgain() {
 }
 
 async function createISO() {
+  const project = tabStore.activeProject
   const outputPath = await Dialogs.SaveFile({
-    title: t('burn.createIsoTitle'),
-    filters: [{ displayName: 'ISO Image', pattern: '*.iso' }],
+    Title: t('burn.createIsoTitle'),
+    Filename: (project?.name || 'image') + '.iso',
+    Filters: [{ DisplayName: 'ISO Image', Pattern: '*.iso' }],
   })
   if (!outputPath) return
   step.value = 'burning'
@@ -113,6 +133,39 @@ async function handleCopyCommand() {
   }
 }
 
+// --- Сохранение проекта (режим 'save') ---
+
+async function saveProject() {
+  const activeTabId = tabStore.activeTabId
+  const data = tabStore.getProjectData(activeTabId)
+  if (!data) return
+
+  if (data.filePath) {
+    await projectStore.saveProject(activeTabId)
+  } else {
+    const filePath = await Dialogs.SaveFile({
+      Title: t('header.save'),
+      Filename: (data.name || 'project') + '.xorriso-project',
+      Filters: [{ DisplayName: 'Xorriso Project', Pattern: '*.xorriso-project' }],
+    })
+    if (!filePath) return
+    await projectStore.saveProjectAs(activeTabId, filePath)
+  }
+  emit('close')
+}
+
+// --- Переименование проекта ---
+
+function updateProjectName(name) {
+  const activeTabId = tabStore.activeTabId
+  const data = tabStore.getProjectData(activeTabId)
+  if (data) {
+    data.name = name
+    data.volumeId = name
+    tabStore.updateTabLabel(activeTabId, name)
+  }
+}
+
 // --- Закрытие overlay ---
 
 function handleClose() {
@@ -125,13 +178,13 @@ function handleClose() {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto p-6">
-    <div class="max-w-3xl mx-auto space-y-6">
+  <div class="p-6">
+    <div class="space-y-6">
 
       <!-- Заголовок -->
       <div class="flex items-center justify-between gap-4">
         <h2 class="text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">
-          {{ t('burn.title') }}
+          {{ mode === 'save' ? t('header.save') : t('burn.title') }}
         </h2>
 
         <!-- Toggle простой / экспертный режим (только в шаге configure) -->
@@ -166,6 +219,7 @@ function handleClose() {
         <!-- Простой режим -->
         <BurnSimpleMode
           v-if="viewMode === 'simple'"
+          :mode="mode"
           :project="tabStore.activeProject"
           :devices="deviceStore.devices"
           :current-device-path="deviceStore.currentDevicePath || ''"
@@ -179,11 +233,14 @@ function handleClose() {
           @format-disc="handleFormat"
           @refresh-media="deviceStore.fetchMediaInfo()"
           @eject="deviceStore.ejectDisc()"
+          @save-project="saveProject"
+          @update-name="updateProjectName"
         />
 
         <!-- Экспертный режим -->
         <BurnExpertMode
           v-else
+          :mode="mode"
           :project="tabStore.activeProject"
           :devices="deviceStore.devices"
           :current-device-path="deviceStore.currentDevicePath || ''"
@@ -199,21 +256,23 @@ function handleClose() {
           @refresh-media="deviceStore.fetchMediaInfo()"
           @eject="deviceStore.ejectDisc()"
           @copy-command="handleCopyCommand"
+          @save-project="saveProject"
+          @update-name="updateProjectName"
         />
       </template>
 
-      <!-- Шаг: Запись -->
+      <!-- Шаг: Запись (только в режиме burn) -->
       <BurnRunning
-        v-else-if="step === 'burning'"
+        v-else-if="mode === 'burn' && step === 'burning'"
         :progress="burnStore.progress"
         :log-lines="burnStore.logLines"
         :phase-label="phaseLabel"
         @cancel="cancelBurn"
       />
 
-      <!-- Шаг: Результат -->
+      <!-- Шаг: Результат (только в режиме burn) -->
       <BurnResult
-        v-else-if="step === 'done'"
+        v-else-if="mode === 'burn' && step === 'done'"
         :job="burnStore.currentJob"
         :log-lines="burnStore.logLines"
         @go-back="handleClose"

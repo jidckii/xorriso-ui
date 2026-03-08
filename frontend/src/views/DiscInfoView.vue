@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeviceStore } from '../stores/deviceStore'
 import { useProjectStore } from '../stores/projectStore'
@@ -8,6 +9,13 @@ const deviceStore = useDeviceStore()
 const projectStore = useProjectStore()
 
 const emit = defineEmits(['close'])
+
+const currentProfile = computed(() => {
+  const profiles = deviceStore.currentDevice?.profiles
+  if (!profiles) return null
+  const active = profiles.find(p => p.current)
+  return active?.name || null
+})
 
 function formatBytes(bytes) {
   return projectStore.formatBytes(bytes)
@@ -111,6 +119,8 @@ function formatBytes(bytes) {
               <span class="text-gray-500">{{ t('device.driveSpeed') }}:</span>
               <span>{{ deviceStore.currentDevice.driveSpeed }}x</span>
             </template>
+            <span class="text-gray-500">{{ t('device.currentProfile') }}:</span>
+            <span>{{ currentProfile || '—' }}</span>
           </div>
         </div>
 

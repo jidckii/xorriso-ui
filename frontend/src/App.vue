@@ -1,8 +1,7 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from './components/layout/AppHeader.vue'
-import AppStatusBar from './components/layout/AppStatusBar.vue'
 import TabBar from './components/layout/TabBar.vue'
 import ProjectView from './views/ProjectView.vue'
 import DiscInfoView from './views/DiscInfoView.vue'
@@ -18,13 +17,26 @@ const projectStore = useProjectStore()
 
 const isMainView = computed(() => route.path === '/')
 
+function onKeydown(e) {
+  if (e.key === 'Escape') {
+    if (tabStore.showDiscInfo) {
+      tabStore.showDiscInfo = false
+    }
+  }
+}
+
 onMounted(async () => {
+  document.addEventListener('keydown', onKeydown)
   deviceStore.init()
   if (tabStore.tabs.length === 0) {
     const tabId = tabStore.addProjectTab()
     const tab = tabStore.tabs.find(t => t.id === tabId)
     await projectStore.newProject(tabId, tab.label, tab.label)
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown)
 })
 </script>
 
@@ -34,14 +46,27 @@ onMounted(async () => {
     <TabBar v-if="isMainView" />
     <main class="flex-1 overflow-hidden relative">
       <template v-if="isMainView">
-        <ProjectView v-show="!tabStore.showDiscInfo && !tabStore.showBurn" :key="tabStore.activeTabId" />
-        <!-- Disc Info -->
-        <DiscInfoView v-if="tabStore.showDiscInfo" @close="tabStore.showDiscInfo = false" />
-        <!-- Burn Overlay -->
-        <BurnOverlay v-if="tabStore.showBurn" @close="tabStore.closeBurn()" />
+        <ProjectView :key="tabStore.activeTabId" />
+        <!-- Disc Info Modal -->
+        <Teleport to="body">
+          <div v-if="tabStore.showDiscInfo" class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="absolute inset-0 bg-black/50" @click="tabStore.showDiscInfo = false" />
+            <div class="relative w-[900px] max-h-[85vh] bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-300 dark:border-gray-700 overflow-y-auto">
+              <DiscInfoView @close="tabStore.showDiscInfo = false" />
+            </div>
+          </div>
+        </Teleport>
+        <!-- Burn / Save Modal -->
+        <Teleport to="body">
+          <div v-if="tabStore.showBurnModal" class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="absolute inset-0 bg-black/50" />
+            <div class="relative w-[900px] max-h-[85vh] bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-300 dark:border-gray-700 overflow-y-auto">
+              <BurnOverlay :mode="tabStore.burnModalMode" @close="tabStore.closeBurnModal()" />
+            </div>
+          </div>
+        </Teleport>
       </template>
       <router-view v-else />
     </main>
-    <AppStatusBar />
   </div>
 </template>

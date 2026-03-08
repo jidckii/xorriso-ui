@@ -52,6 +52,21 @@ function formatBytes(bytes) {
     <!-- Bottom: Capacity Bar with Device Selector -->
     <div class="px-3 py-2 bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-700">
       <div class="flex items-center gap-3">
+        <!-- Disc Info toggle -->
+        <button
+          @click="tabStore.toggleDiscInfo()"
+          class="p-1 rounded transition-colors shrink-0"
+          :class="tabStore.showDiscInfo
+            ? 'bg-blue-600 text-white hover:bg-blue-500'
+            : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-200'"
+          :title="t('tabs.discInfo')"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="2" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4m0-4h.01" />
+          </svg>
+        </button>
+
         <!-- Inline Device Selector -->
         <div class="relative shrink-0">
           <select
@@ -88,11 +103,17 @@ function formatBytes(bytes) {
           <span v-if="capacityPercent > 0" class="ml-1">({{ capacityPercent.toFixed(1) }}%)</span>
         </span>
         <button
-          @click="tabStore.openBurn()"
+          @click="tabStore.openBurnModal('burn')"
           :disabled="!currentProject?.entries?.length"
-          class="px-3 py-1 text-xs font-semibold rounded bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap shrink-0"
+          class="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap shrink-0"
         >
-          {{ t('burn.startBurn') }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+          </svg>
+          {{ t('header.burn') }}
         </button>
       </div>
       <div class="flex items-center gap-4 mt-1">

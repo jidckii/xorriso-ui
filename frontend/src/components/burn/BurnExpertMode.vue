@@ -1,9 +1,11 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Pencil, Check } from 'lucide-vue-next'
 import { formatBytes } from '../../composables/useFormatBytes'
 
 const props = defineProps({
+  mode: { type: String, default: 'burn' },
   project: { type: Object, required: true },
   devices: { type: Array, required: true },
   currentDevicePath: { type: String, default: '' },
@@ -22,9 +24,26 @@ const emit = defineEmits([
   'refresh-media',
   'eject',
   'copy-command',
+  'save-project',
+  'update-name',
 ])
 
 const { t } = useI18n()
+
+// --- Редактирование имени ---
+const editingName = ref(false)
+const nameInput = ref(null)
+
+async function startEditName() {
+  editingName.value = true
+  await nextTick()
+  nameInput.value?.focus()
+  nameInput.value?.select()
+}
+
+function confirmName() {
+  editingName.value = false
+}
 
 // Режим очистки (для секции Blank/Format)
 const blankMode = ref('fast')
@@ -80,8 +99,8 @@ const canBurn = computed(() => {
 <template>
   <div class="space-y-4">
 
-    <!-- Секция 1: Выбор устройства -->
-    <div class="flex items-center gap-3 flex-wrap">
+    <!-- Секция 1: Выбор устройства (только в режиме burn) -->
+    <div v-if="mode === 'burn'" class="flex items-center gap-3 flex-wrap">
       <label class="text-sm font-medium text-gray-600 dark:text-gray-400 shrink-0">
         {{ t('device.device') }}:
       </label>
@@ -121,17 +140,17 @@ const canBurn = computed(() => {
       </button>
     </div>
 
-    <!-- Нет устройства -->
+    <!-- Нет устройства (только в режиме burn) -->
     <div
-      v-if="!currentDevicePath"
+      v-if="mode === 'burn' && !currentDevicePath"
       class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 text-center text-gray-500 dark:text-gray-600 py-8"
     >
       <p class="text-sm">{{ t('device.noDeviceSelected') }}</p>
     </div>
 
-    <template v-else>
-      <!-- Карточка носителя -->
-      <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+    <template v-if="mode === 'save' || currentDevicePath">
+      <!-- Карточка носителя (только в режиме burn) -->
+      <div v-if="mode === 'burn'" class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
         <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
           {{ t('device.mediaInfo') }}
         </h3>
@@ -161,9 +180,34 @@ const canBurn = computed(() => {
           {{ t('burn.project') }}
         </h3>
         <div class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-          <div class="flex justify-between">
+          <div class="flex justify-between items-center">
             <span class="text-gray-500">{{ t('common.name') }}:</span>
-            <span>{{ project?.name || '—' }}</span>
+            <div class="flex items-center gap-1.5">
+              <template v-if="editingName">
+                <input
+                  ref="nameInput"
+                  :value="project?.name || ''"
+                  @input="emit('update-name', $event.target.value)"
+                  @keydown.enter="confirmName"
+                  class="bg-gray-100 dark:bg-gray-700 text-right rounded px-2 py-0.5 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:outline-none max-w-[200px]"
+                />
+                <button
+                  @click="confirmName"
+                  class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-green-500 transition-colors"
+                >
+                  <Check :size="14" />
+                </button>
+              </template>
+              <template v-else>
+                <span>{{ project?.name || '—' }}</span>
+                <button
+                  @click="startEditName"
+                  class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <Pencil :size="12" />
+                </button>
+              </template>
+            </div>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500">{{ t('common.files') }}:</span>
@@ -175,8 +219,8 @@ const canBurn = computed(() => {
           </div>
         </div>
 
-        <!-- Индикатор заполнения диска -->
-        <div v-if="mediaCapacityBytes > 0" class="mt-3 space-y-1">
+        <!-- Индикатор заполнения диска (только в режиме burn) -->
+        <div v-if="mode === 'burn' && mediaCapacityBytes > 0" class="mt-3 space-y-1">
           <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all"
@@ -352,8 +396,8 @@ const canBurn = computed(() => {
         </div>
       </div>
 
-      <!-- Секция 5: Blank / Format -->
-      <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+      <!-- Секция 5: Blank / Format (только в режиме burn) -->
+      <div v-if="mode === 'burn'" class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
         <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
           {{ t('burn.blankDisc') }}
         </h3>
@@ -390,8 +434,19 @@ const canBurn = computed(() => {
         </div>
       </div>
 
-      <!-- Секция 6: Кнопки действий -->
-      <div class="flex justify-end gap-3 flex-wrap">
+      <!-- Секция 6: Кнопки действий — режим save -->
+      <div v-if="mode === 'save'" class="flex justify-end gap-3">
+        <button
+          @click="emit('save-project')"
+          :disabled="!project?.entries?.length"
+          class="px-6 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {{ t('header.save') }}
+        </button>
+      </div>
+
+      <!-- Секция 6: Кнопки действий — режим burn -->
+      <div v-else class="flex justify-end gap-3 flex-wrap">
         <!-- Скопировать команду -->
         <button
           @click="emit('copy-command')"
