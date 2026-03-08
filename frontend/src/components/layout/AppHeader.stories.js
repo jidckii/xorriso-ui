@@ -8,7 +8,6 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/', component: { template: '<div />' } },
-    { path: '/burn', component: { template: '<div />' } },
     { path: '/settings', component: { template: '<div />' } },
   ],
 })

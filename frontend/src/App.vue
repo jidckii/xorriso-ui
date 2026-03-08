@@ -6,6 +6,7 @@ import AppStatusBar from './components/layout/AppStatusBar.vue'
 import TabBar from './components/layout/TabBar.vue'
 import ProjectView from './views/ProjectView.vue'
 import DiscInfoView from './views/DiscInfoView.vue'
+import BurnOverlay from './components/burn/BurnOverlay.vue'
 import { useTabStore } from './stores/tabStore'
 import { useDeviceStore } from './stores/deviceStore'
 import { useProjectStore } from './stores/projectStore'
@@ -33,9 +34,11 @@ onMounted(async () => {
     <TabBar v-if="isMainView" />
     <main class="flex-1 overflow-hidden relative">
       <template v-if="isMainView">
-        <ProjectView v-show="!tabStore.showDiscInfo" :key="tabStore.activeTabId" />
+        <ProjectView v-show="!tabStore.showDiscInfo && !tabStore.showBurn" :key="tabStore.activeTabId" />
         <!-- Disc Info -->
         <DiscInfoView v-if="tabStore.showDiscInfo" @close="tabStore.showDiscInfo = false" />
+        <!-- Burn Overlay -->
+        <BurnOverlay v-if="tabStore.showBurn" @close="tabStore.closeBurn()" />
       </template>
       <router-view v-else />
     </main>

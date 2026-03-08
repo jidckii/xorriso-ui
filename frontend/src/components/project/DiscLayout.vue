@@ -1,7 +1,6 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { ExternalLink, FolderOpen, Trash2, Info } from 'lucide-vue-next'
 import PanelHeader from '../ui/PanelHeader.vue'
 import DiscLayoutTree from './DiscLayoutTree.vue'
@@ -15,7 +14,6 @@ import { formatBytes } from '../../composables/useFormatBytes'
 import { useFileSort } from '../../composables/useFileSort'
 
 const { t } = useI18n()
-const router = useRouter()
 const projectStore = useProjectStore()
 const tabStore = useTabStore()
 
@@ -167,7 +165,7 @@ function countAllItems(items) {
 }
 
 function goToBurn() {
-  router.push('/burn')
+  tabStore.openBurn()
 }
 
 const canBurn = computed(() => {

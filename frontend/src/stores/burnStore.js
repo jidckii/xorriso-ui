@@ -1,12 +1,18 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { StartBurn, CancelBurn, BlankDisc, FormatDisc, GetJobStatus, CreateISO as CreateISOBinding } from '../../bindings/xorriso-ui/services/burnservice.js'
+import { StartBurn, CancelBurn, BlankDisc, FormatDisc, GetJobStatus, CreateISO as CreateISOBinding, GetBurnCommand } from '../../bindings/xorriso-ui/services/burnservice.js'
 import { Events } from '@wailsio/runtime'
 
 export const useBurnStore = defineStore('burn', () => {
   // --- State ---
   const currentJob = ref(null)
   const logLines = ref([])
+  const viewMode = ref(localStorage.getItem('xorriso-burn-mode') || 'simple')
+
+  function setViewMode(mode) {
+    viewMode.value = mode
+    localStorage.setItem('xorriso-burn-mode', mode)
+  }
   const isBurning = computed(() => currentJob.value !== null && ['preparing', 'burning', 'verifying', 'blanking', 'formatting', 'creating_iso'].includes(currentJob.value.state))
   const isCreatingIso = computed(() => currentJob.value !== null && currentJob.value.state === 'creating_iso')
 
@@ -205,6 +211,15 @@ export const useBurnStore = defineStore('burn', () => {
    * Initialize event listeners for burn-related Wails events.
    * Call this once from the app root or on store creation.
    */
+  async function getBurnCommand(project, devicePath, opts) {
+    try {
+      return await GetBurnCommand(project, devicePath, opts)
+    } catch (error) {
+      console.error('Failed to get burn command:', error)
+      return ''
+    }
+  }
+
   function init() {
     Events.On('burn:progress', (data) => {
       if (currentJob.value) {
@@ -244,13 +259,16 @@ export const useBurnStore = defineStore('burn', () => {
     // State
     currentJob,
     logLines,
+    viewMode,
     // Getters
     isBurning,
     isCreatingIso,
     progress,
     // Actions
+    setViewMode,
     startBurn,
     createISO,
+    getBurnCommand,
     cancelBurn,
     blankDisc,
     formatDisc,

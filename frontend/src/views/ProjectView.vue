@@ -87,6 +87,13 @@ function formatBytes(bytes) {
           {{ formatBytes(currentProject.totalSize) }} / {{ formatBytes(deviceStore.mediaCapacityBytes) }}
           <span v-if="capacityPercent > 0" class="ml-1">({{ capacityPercent.toFixed(1) }}%)</span>
         </span>
+        <button
+          @click="tabStore.openBurn()"
+          :disabled="!currentProject?.entries?.length"
+          class="px-3 py-1 text-xs font-semibold rounded bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap shrink-0"
+        >
+          {{ t('burn.startBurn') }}
+        </button>
       </div>
       <div class="flex items-center gap-4 mt-1">
         <div class="flex items-center gap-1">

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -232,6 +233,167 @@ func TestBuildISOCommand_Minimal(t *testing.T) {
 	}
 }
 
+func TestGetBurnCommand_Full(t *testing.T) {
+	svc := NewBurnService(&mockRunner{}, nil)
+	svc.emitEvent = noopEmit
+
+	project := &models.Project{
+		VolumeID: "DISC_1",
+		Entries: []models.FileEntry{
+			{SourcePath: "/home/user/file.txt", DestPath: "/file.txt"},
+			{SourcePath: "/home/user/docs", DestPath: "/docs", IsDir: true},
+		},
+		ISOOptions: models.ISOOptions{
+			ISOLevel:  3,
+			RockRidge: true,
+			Joliet:    true,
+		},
+	}
+
+	opts := models.BurnOptions{
+		Speed:           "4x",
+		DummyMode:       true,
+		CloseDisc:       true,
+		StreamRecording: true,
+		Eject:           true,
+		BurnMode:        "SAO",
+		Padding:         300,
+	}
+
+	result, err := svc.GetBurnCommand(project, "/dev/sr0", opts)
+	if err != nil {
+		t.Fatalf("GetBurnCommand: %v", err)
+	}
+
+	// Должна начинаться с "xorriso"
+	if result[:8] != "xorriso " {
+		t.Errorf("expected command to start with 'xorriso ', got: %s", result[:20])
+	}
+
+	// Проверяем наличие ключевых фрагментов
+	expectations := []string{
+		"-dev /dev/sr0",
+		"-volid DISC_1",
+		"-iso_level 3",
+		"-rockridge on",
+		"-joliet on",
+		"-speed 4x",
+		"-write_type SAO",
+		"-padding 300k",
+		"-dummy on",
+		"-close on",
+		"-stream_recording on",
+		"-map /home/user/file.txt /file.txt",
+		"-map /home/user/docs /docs",
+		"-commit",
+		"-eject all",
+	}
+
+	for _, exp := range expectations {
+		if !containsSubstring(result, exp) {
+			t.Errorf("expected %q in command, got: %s", exp, result)
+		}
+	}
+}
+
+func TestGetBurnCommand_Minimal(t *testing.T) {
+	svc := NewBurnService(&mockRunner{}, nil)
+	svc.emitEvent = noopEmit
+
+	project := &models.Project{
+		Entries: []models.FileEntry{
+			{SourcePath: "/tmp/data", DestPath: "/data"},
+		},
+		ISOOptions: models.ISOOptions{},
+	}
+
+	opts := models.BurnOptions{}
+
+	result, err := svc.GetBurnCommand(project, "/dev/sr1", opts)
+	if err != nil {
+		t.Fatalf("GetBurnCommand: %v", err)
+	}
+
+	if !containsSubstring(result, "-dev /dev/sr1") {
+		t.Error("expected -dev /dev/sr1")
+	}
+	if !containsSubstring(result, "-commit") {
+		t.Error("expected -commit")
+	}
+	// Без eject
+	if containsSubstring(result, "-eject") {
+		t.Error("should not have -eject when opts.Eject is false")
+	}
+	// Speed auto — не должно быть -speed
+	if containsSubstring(result, "-speed") {
+		t.Error("should not have -speed when speed is empty")
+	}
+}
+
+func TestGetBurnCommand_Multisession(t *testing.T) {
+	svc := NewBurnService(&mockRunner{}, nil)
+	svc.emitEvent = noopEmit
+
+	project := &models.Project{
+		Entries: []models.FileEntry{
+			{SourcePath: "/tmp/data", DestPath: "/data"},
+		},
+	}
+
+	opts := models.BurnOptions{
+		Multisession: true,
+		CloseDisc:    true, // должно быть проигнорировано в пользу multisession
+	}
+
+	result, err := svc.GetBurnCommand(project, "/dev/sr0", opts)
+	if err != nil {
+		t.Fatalf("GetBurnCommand: %v", err)
+	}
+
+	// Multisession: close off (диск остаётся открытым)
+	if !containsSubstring(result, "-close off") {
+		t.Errorf("expected -close off for multisession, got: %s", result)
+	}
+}
+
+func TestGetBurnCommand_NilProject(t *testing.T) {
+	svc := NewBurnService(&mockRunner{}, nil)
+	svc.emitEvent = noopEmit
+
+	_, err := svc.GetBurnCommand(nil, "/dev/sr0", models.BurnOptions{})
+	if err == nil {
+		t.Fatal("expected error for nil project")
+	}
+}
+
+func TestGetBurnCommand_EmptyDevice(t *testing.T) {
+	svc := NewBurnService(&mockRunner{}, nil)
+	svc.emitEvent = noopEmit
+
+	project := &models.Project{
+		Entries: []models.FileEntry{{SourcePath: "/tmp/f", DestPath: "/f"}},
+	}
+
+	_, err := svc.GetBurnCommand(project, "", models.BurnOptions{})
+	if err == nil {
+		t.Fatal("expected error for empty device path")
+	}
+}
+
+func TestGetBurnCommand_NoEntries(t *testing.T) {
+	svc := NewBurnService(&mockRunner{}, nil)
+	svc.emitEvent = noopEmit
+
+	project := &models.Project{
+		Entries: []models.FileEntry{},
+	}
+
+	_, err := svc.GetBurnCommand(project, "/dev/sr0", models.BurnOptions{})
+	if err == nil {
+		t.Fatal("expected error for project with no entries")
+	}
+}
+
 // --- Вспомогательные функции ---
 
 func joinArgs(args []string) string {
@@ -252,6 +414,10 @@ func containsArg(args []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func containsSubstring(s, substr string) bool {
+	return strings.Contains(s, substr)
 }
 
 func containsSequence(args []string, a, b string) bool {

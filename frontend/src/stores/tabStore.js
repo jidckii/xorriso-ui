@@ -58,6 +58,7 @@ export const useTabStore = defineStore('tabs', () => {
   const tabs = ref([])
   const activeTabId = ref(null)
   const showDiscInfo = ref(false)
+  const showBurn = ref(false)
 
   const activeTab = computed(() =>
     tabs.value.find(t => t.id === activeTabId.value) || null
@@ -106,6 +107,15 @@ export const useTabStore = defineStore('tabs', () => {
     showDiscInfo.value = !showDiscInfo.value
   }
 
+  function openBurn() {
+    showDiscInfo.value = false
+    showBurn.value = true
+  }
+
+  function closeBurn() {
+    showBurn.value = false
+  }
+
   function setActiveTab(tabId) {
     activeTabId.value = tabId
   }
@@ -131,11 +141,14 @@ export const useTabStore = defineStore('tabs', () => {
     tabs,
     activeTabId,
     showDiscInfo,
+    showBurn,
     activeTab,
     activeProject,
     addProjectTab,
     removeTab,
     toggleDiscInfo,
+    openBurn,
+    closeBurn,
     setActiveTab,
     getProjectData,
     updateProjectData,

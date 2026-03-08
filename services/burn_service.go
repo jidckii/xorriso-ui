@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -214,4 +215,52 @@ func (s *BurnService) buildISOCommand(cmd *xorriso.CommandBuilder, project *mode
 	for _, entry := range project.Entries {
 		cmd.Map(entry.SourcePath, entry.DestPath)
 	}
+}
+
+// GetBurnCommand формирует полную строку команды xorriso для записи диска.
+// Результат можно скопировать в буфер обмена и выполнить в терминале.
+func (s *BurnService) GetBurnCommand(project *models.Project, devicePath string, opts models.BurnOptions) (string, error) {
+	if project == nil {
+		return "", fmt.Errorf("project is nil")
+	}
+	if devicePath == "" {
+		return "", fmt.Errorf("device path is empty")
+	}
+	if len(project.Entries) == 0 {
+		return "", fmt.Errorf("project has no entries")
+	}
+
+	cmd := xorriso.NewCommand()
+	cmd.Device(devicePath)
+
+	// ISO-опции и файлы проекта
+	s.buildISOCommand(cmd, project)
+
+	// Опции записи
+	if opts.Speed != "" && opts.Speed != "auto" {
+		cmd.WriteSpeed(opts.Speed)
+	}
+	if opts.BurnMode != "" && opts.BurnMode != "auto" {
+		cmd.WriteType(opts.BurnMode)
+	}
+	if opts.Padding > 0 {
+		cmd.Padding(opts.Padding)
+	}
+
+	cmd.Dummy(opts.DummyMode)
+	if opts.Multisession {
+		cmd.Close(false)
+	} else {
+		cmd.Close(opts.CloseDisc)
+	}
+	cmd.StreamRecording(opts.StreamRecording)
+
+	cmd.Commit()
+
+	if opts.Eject {
+		cmd.Eject("all")
+	}
+
+	args := cmd.Build()
+	return "xorriso " + strings.Join(args, " "), nil
 }
