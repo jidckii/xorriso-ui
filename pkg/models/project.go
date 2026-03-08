@@ -23,6 +23,7 @@ type FileEntry struct {
 }
 
 type ISOOptions struct {
+	UDF        bool `json:"udf"`
 	ISOLevel   int  `json:"isoLevel"`
 	RockRidge  bool `json:"rockRidge"`
 	Joliet     bool `json:"joliet"`
@@ -42,4 +43,5 @@ type BurnOptions struct {
 	BurnMode        string `json:"burnMode"`
 	Padding         int    `json:"padding"`
 	Multisession    bool   `json:"multisession"`
+	CleanupISO      bool   `json:"cleanupIso"`
 }

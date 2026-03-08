@@ -63,7 +63,9 @@
     "burnFailedMessage": "An error occurred during the burn process. Check the log for details.",
     "close": "Close",
     "multisession": "Keep disc open for more sessions",
-    "multisessionHint": "The disc will not be finalized, allowing additional sessions to be written later."
+    "multisessionHint": "The disc will not be finalized, allowing additional sessions to be written later.",
+    "cleanupIso": "Delete temporary ISO after successful burn",
+    "cleanupIsoHint": "When UDF is enabled, a temporary ISO is created before burning. This option removes it after successful write."
   },
   "burnOptions": {
     "writeSpeed": "Write Speed",
@@ -139,7 +141,8 @@
     "speed4x": "4x",
     "speed8x": "8x",
     "speed12x": "12x",
-    "speed16x": "16x"
+    "speed16x": "16x",
+    "udf": "UDF filesystem (required for Blu-ray)"
   },
   "device": {
     "selectDevice": "Select device...",

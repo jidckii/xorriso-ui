@@ -62,13 +62,15 @@ func (s *SettingsService) GetSettings() (*AppSettings, error) {
 	settings := &AppSettings{
 		XorrisoPath: xorrisoPath,
 		DefaultBurn: models.BurnOptions{
-			Speed:    "auto",
-			Verify:   true,
-			Eject:    true,
-			BurnMode: "auto",
-			Padding:  300,
+			Speed:      "auto",
+			Verify:     true,
+			Eject:      true,
+			BurnMode:   "auto",
+			Padding:    300,
+			CleanupISO: true,
 		},
 		DefaultISO: models.ISOOptions{
+			UDF:       true,
 			ISOLevel:  3,
 			RockRidge: true,
 			MD5:       true,

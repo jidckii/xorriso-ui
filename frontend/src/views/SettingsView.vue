@@ -32,6 +32,7 @@ const settings = reactive({
     streamRecording: false,
   },
   defaultIsoOptions: {
+    udf: true,
     isoLevel: 3,
     rockRidge: false,
     joliet: false,
@@ -250,6 +251,10 @@ loadXorrisoVersion()
           <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
             <input type="checkbox" v-model="settings.defaultIsoOptions.joliet" class="accent-blue-500" />
             {{ t('settings.joliet') }}
+          </label>
+          <label class="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+            <input type="checkbox" v-model="settings.defaultIsoOptions.udf" class="accent-blue-500" />
+            {{ t('settings.udf') }}
           </label>
           <label class="flex items-center gap-3 text-sm" :class="settings.bdxlSafeMode ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'">
             <input type="checkbox" v-model="settings.defaultIsoOptions.md5" :disabled="settings.bdxlSafeMode" class="accent-blue-500" />

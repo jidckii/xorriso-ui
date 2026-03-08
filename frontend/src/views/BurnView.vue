@@ -225,6 +225,10 @@ function formatBytes(bytes) {
               <input type="checkbox" v-model="burnProject.burnOptions.multisession" class="accent-blue-500" />
               {{ t('burn.multisession') }}
             </label>
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input type="checkbox" v-model="burnProject.burnOptions.cleanupIso" class="accent-blue-500" />
+              {{ t('burn.cleanupIso') }}
+            </label>
           </div>
           <p v-if="burnProject.burnOptions.multisession" class="text-xs text-yellow-500 mt-1">
             {{ t('burn.multisessionHint') }}

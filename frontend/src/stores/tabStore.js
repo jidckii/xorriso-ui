@@ -10,6 +10,7 @@ function createProjectData(name = 'Untitled Project', volumeId = 'UNTITLED') {
     volumeId,
     entries: [],
     isoOptions: {
+      udf: true,
       isoLevel: 3,
       rockRidge: false,
       joliet: false,
@@ -32,6 +33,7 @@ function createProjectData(name = 'Untitled Project', volumeId = 'UNTITLED') {
       streamRecording: false,
       multisession: false,
       padding: '',
+      cleanupIso: true,
     },
     createdAt: '',
     updatedAt: '',
