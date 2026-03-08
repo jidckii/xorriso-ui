@@ -26,7 +26,7 @@ func (s *BurnService) runBurnUDF(ctx context.Context, project *models.Project, d
 		return
 	}
 	tmpPath := tmpFile.Name()
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Check disk space
 	totalSize := int64(0)
@@ -36,12 +36,12 @@ func (s *BurnService) runBurnUDF(ctx context.Context, project *models.Project, d
 	requiredSize := totalSize + totalSize/20 // +5% overhead
 	ok, available, err := s.CheckDiskSpace(tmpPath, requiredSize)
 	if err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		s.finishJob(jobID, models.BurnStateError, nil, fmt.Sprintf("failed to check disk space: %s", err))
 		return
 	}
 	if !ok {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		s.finishJob(jobID, models.BurnStateError, nil, fmt.Sprintf("not enough disk space: need %d MB, available %d MB", requiredSize/1024/1024, available/1024/1024))
 		return
 	}
@@ -78,7 +78,7 @@ func (s *BurnService) runBurnUDF(ctx context.Context, project *models.Project, d
 	})
 
 	if err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		s.finishJob(jobID, models.BurnStateError, nil, fmt.Sprintf("mkisofs failed: %s", err))
 		return
 	}
@@ -188,7 +188,7 @@ func (s *BurnService) runBurnUDF(ctx context.Context, project *models.Project, d
 
 	// Cleanup temp ISO
 	if opts.CleanupISO {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		s.emitLog("Temporary ISO removed")
 	} else {
 		s.emitLog(fmt.Sprintf("Temporary ISO kept at: %s", tmpPath))

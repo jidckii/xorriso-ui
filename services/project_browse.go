@@ -72,7 +72,7 @@ func (s *ProjectService) ListMountPoints() ([]MountPoint, error) {
 	if err != nil {
 		return points, nil
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Filesystem types to skip (virtual/pseudo filesystems)
 	skipFS := map[string]bool{

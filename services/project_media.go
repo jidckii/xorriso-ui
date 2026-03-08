@@ -47,7 +47,7 @@ func (s *ProjectService) GetImagePreview(filePath string, maxSize int) (string, 
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var src image.Image
 	switch ext {
@@ -71,12 +71,13 @@ func (s *ProjectService) GetImagePreview(filePath string, maxSize int) (string, 
 	// Calculate thumbnail dimensions preserving aspect ratio
 	bounds := src.Bounds()
 	w, h := bounds.Dx(), bounds.Dy()
-	if w <= maxSize && h <= maxSize {
+	switch {
+	case w <= maxSize && h <= maxSize:
 		// Image is already small enough, encode directly
-	} else if w > h {
+	case w > h:
 		h = h * maxSize / w
 		w = maxSize
-	} else {
+	default:
 		w = w * maxSize / h
 		h = maxSize
 	}
@@ -208,7 +209,7 @@ func getImageDimensions(path string, ext string) (int, int) {
 	if err != nil {
 		return 0, 0
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var cfg image.Config
 	switch ext {
@@ -235,7 +236,7 @@ func fillExifData(filePath string, props *FileProperties) {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	x, err := exif.Decode(f)
 	if err != nil {
@@ -433,7 +434,7 @@ func fillMediaMetadata(filePath string, props *FileProperties) {
 // parseDurationSeconds parses a string like "123.456" to float64 seconds
 func parseDurationSeconds(s string) float64 {
 	var v float64
-	fmt.Sscanf(s, "%f", &v)
+	_, _ = fmt.Sscanf(s, "%f", &v)
 	return v
 }
 
@@ -442,8 +443,8 @@ func parseFrameRate(s string) string {
 	parts := strings.Split(s, "/")
 	if len(parts) == 2 {
 		var num, den float64
-		fmt.Sscanf(parts[0], "%f", &num)
-		fmt.Sscanf(parts[1], "%f", &den)
+		_, _ = fmt.Sscanf(parts[0], "%f", &num)
+		_, _ = fmt.Sscanf(parts[1], "%f", &den)
 		if den > 0 {
 			fps := num / den
 			if fps == float64(int(fps)) {
@@ -458,7 +459,7 @@ func parseFrameRate(s string) string {
 // formatBitrate converts "1234567" (bps) to "1.23 Mbps" or "128000" to "128 kbps"
 func formatBitrate(s string) string {
 	var bps float64
-	fmt.Sscanf(s, "%f", &bps)
+	_, _ = fmt.Sscanf(s, "%f", &bps)
 	if bps <= 0 {
 		return s
 	}

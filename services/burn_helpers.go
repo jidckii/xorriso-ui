@@ -35,9 +35,10 @@ func (s *BurnService) finishJob(jobID string, state models.BurnState, result *mo
 	}
 	s.mu.Unlock()
 
-	if state == models.BurnStateDone {
+	switch state {
+	case models.BurnStateDone:
 		s.emitEvent(models.EventBurnComplete, result)
-	} else if state == models.BurnStateError {
+	case models.BurnStateError:
 		s.emitEvent(models.EventBurnError, errMsg)
 	}
 }

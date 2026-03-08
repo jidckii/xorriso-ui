@@ -97,7 +97,7 @@ func (s *ProjectService) AddFiles(project *models.Project, sourcePaths []string,
 
 			// Recursively add all files inside
 			baseDest := filepath.Join(destDir, filepath.Base(src))
-			filepath.Walk(src, func(path string, fi os.FileInfo, err error) error {
+			_ = filepath.Walk(src, func(path string, fi os.FileInfo, err error) error {
 				if err != nil || path == src {
 					return nil
 				}

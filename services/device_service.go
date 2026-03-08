@@ -89,7 +89,7 @@ func discoverDrivesFromProc(procCdromInfoPath, sysBlockPath string) ([]models.De
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var driveNames []string
 	var canCloseTray []bool
@@ -99,23 +99,24 @@ func discoverDrivesFromProc(procCdromInfoPath, sysBlockPath string) ([]models.De
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "drive name:") {
+		switch {
+		case strings.HasPrefix(line, "drive name:"):
 			parts := strings.Fields(line)
 			if len(parts) > 2 {
 				driveNames = append(driveNames, parts[2:]...)
 			}
-		} else if strings.HasPrefix(line, "drive speed:") {
+		case strings.HasPrefix(line, "drive speed:"):
 			parts := strings.Fields(line)
 			for _, p := range parts[2:] {
 				speed, _ := strconv.Atoi(p)
 				driveSpeeds = append(driveSpeeds, speed)
 			}
-		} else if strings.HasPrefix(line, "Can close tray:") {
+		case strings.HasPrefix(line, "Can close tray:"):
 			parts := strings.Fields(line)
 			for _, p := range parts[3:] {
 				canCloseTray = append(canCloseTray, p == "1")
 			}
-		} else if strings.HasPrefix(line, "Can lock tray:") {
+		case strings.HasPrefix(line, "Can lock tray:"):
 			parts := strings.Fields(line)
 			for _, p := range parts[3:] {
 				canLockTray = append(canLockTray, p == "1")
@@ -224,29 +225,30 @@ func (s *DeviceService) GetMediaInfo(devicePath string) (*models.MediaInfo, erro
 
 	// Parse all text fields from result lines
 	for _, line := range lines {
-		if strings.Contains(line, "Media current:") {
+		switch {
+		case strings.Contains(line, "Media current:"):
 			info.MediaType = extractAfterColon(line)
-		} else if strings.Contains(line, "Media status :") {
+		case strings.Contains(line, "Media status :"):
 			info.MediaStatus = extractAfterColon(line)
-		} else if strings.Contains(line, "Media erasable") {
+		case strings.Contains(line, "Media erasable"):
 			info.Erasable = strings.Contains(line, "is erasable")
-		} else if strings.Contains(line, "Media product:") {
+		case strings.Contains(line, "Media product:"):
 			info.MediaProduct = extractMediaProduct(line)
-		} else if strings.Contains(line, "Volume Id    :") {
+		case strings.Contains(line, "Volume Id    :"):
 			info.VolumeID = extractAfterColon(line)
-		} else if strings.Contains(line, "Volume Set Id:") {
+		case strings.Contains(line, "Volume Set Id:"):
 			info.VolumeSetID = extractAfterColon(line)
-		} else if strings.Contains(line, "Publisher Id :") {
+		case strings.Contains(line, "Publisher Id :"):
 			info.PublisherID = extractAfterColon(line)
-		} else if strings.Contains(line, "Preparer Id  :") {
+		case strings.Contains(line, "Preparer Id  :"):
 			info.PreparerID = extractAfterColon(line)
-		} else if strings.Contains(line, "App Id       :") {
+		case strings.Contains(line, "App Id       :"):
 			info.AppID = extractAfterColon(line)
-		} else if strings.Contains(line, "System Id    :") {
+		case strings.Contains(line, "System Id    :"):
 			info.SystemID = extractAfterColon(line)
-		} else if strings.Contains(line, "Creation Time:") {
+		case strings.Contains(line, "Creation Time:"):
 			info.CreationTime = extractAfterColon(line)
-		} else if strings.Contains(line, "Modif. Time  :") {
+		case strings.Contains(line, "Modif. Time  :"):
 			info.ModifyTime = extractAfterColon(line)
 		}
 	}

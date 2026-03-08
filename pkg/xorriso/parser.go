@@ -162,8 +162,6 @@ func ParseMediaBlocks(lines []string) (readable, writable, overall int64) {
 	return
 }
 
-// checkMediaQualityRe парсит строки вида "quality scan: ... sectors, ... readable, ... unreadable"
-var checkMediaReadableRe = regexp.MustCompile(`(\d+)\s+readable`)
 var checkMediaUnreadableRe = regexp.MustCompile(`(\d+)\s+unreadable`)
 var checkMediaMD5Re = regexp.MustCompile(`MD5 mismatches\s*:\s*(\d+)`)
 
