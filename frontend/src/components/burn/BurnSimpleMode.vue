@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Pencil, Check } from 'lucide-vue-next'
+import { Pencil, Check, Disc, Flame, Save } from 'lucide-vue-next'
 import { formatBytes } from '../../composables/useFormatBytes'
 
 const props = defineProps({
@@ -81,28 +81,18 @@ const canBurn = computed(() => {
     props.project?.entries?.length > 0 &&
     !props.isBurning &&
     hasMedia.value &&
-    (mediaStatus.value === 'blank' || mediaStatus.value === 'appendable') &&
+    (mediaStatus.value.includes('blank') || mediaStatus.value.includes('appendable')) &&
     hasEnoughSpace.value
   )
 })
 
-// Показывать кнопку записи
-const showBurnButton = computed(() =>
-  mediaStatus.value === 'blank' || mediaStatus.value === 'appendable'
-)
-
 // Показывать кнопку очистки/форматирования
 const showBlankButton = computed(() =>
   isErasable.value && (
-    mediaStatus.value === 'blank' ||
-    mediaStatus.value === 'appendable' ||
-    mediaStatus.value === 'complete'
+    mediaStatus.value.includes('blank') ||
+    mediaStatus.value.includes('appendable') ||
+    mediaStatus.value.includes('complete')
   )
-)
-
-// Диск закрыт и не перезаписываемый
-const isDiscClosed = computed(() =>
-  mediaStatus.value === 'complete' && !isErasable.value
 )
 
 // Нет медиа вообще
@@ -284,76 +274,59 @@ function handleBlankOrFormat() {
       </div>
 
       <!-- Кнопки действий: режим save -->
-      <div v-if="mode === 'save'" class="flex items-center gap-3">
+      <div v-if="mode === 'save'" class="flex justify-end gap-3">
         <button
           @click="emit('save-project')"
           :disabled="!project?.entries?.length"
-          class="px-6 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          class="inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
+          <Save :size="16" />
           {{ t('header.save') }}
         </button>
       </div>
 
       <!-- Кнопки действий: режим burn -->
-      <div v-else class="flex items-center gap-3 flex-wrap">
+      <div v-else class="flex justify-end items-center gap-3 flex-wrap">
+        <!-- Предупреждение о нехватке места -->
+        <span
+          v-if="!hasEnoughSpace && project?.entries?.length > 0 && hasMedia"
+          class="text-xs text-yellow-500 flex items-center gap-1 mr-auto"
+        >
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          {{ t('burn.notEnoughSpace') }}
+        </span>
 
-        <!-- Создать ISO (всегда доступна, не требует привода) -->
+        <!-- Кнопка стирания/форматирования -->
+        <button
+          v-if="showBlankButton"
+          @click="handleBlankOrFormat"
+          :disabled="!currentDevicePath || isBurning"
+          class="px-4 py-2 text-sm font-medium rounded bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {{ blankButtonLabel }}
+        </button>
+
+        <!-- Создать ISO -->
         <button
           @click="emit('create-iso')"
           :disabled="!project?.entries?.length || isBurning"
-          class="px-5 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
+          <Disc :size="16" />
           {{ t('burn.createIso') }}
         </button>
 
-        <!-- Нет медиа -->
-        <span
-          v-if="noMedia"
-          class="px-4 py-2 text-sm font-medium rounded bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed"
+        <!-- Прожиг -->
+        <button
+          @click="emit('start-burn')"
+          :disabled="!canBurn"
+          class="inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          {{ t('burn.noMedia') }}
-        </span>
-
-        <!-- Диск закрыт и не перезаписываемый -->
-        <span
-          v-else-if="isDiscClosed"
-          class="px-4 py-2 text-sm font-medium rounded bg-red-900/30 text-red-400 border border-red-700/50"
-        >
-          {{ t('burn.discClosed') }}
-        </span>
-
-        <template v-else>
-          <!-- Предупреждение о нехватке места -->
-          <span
-            v-if="showBurnButton && !hasEnoughSpace && project?.entries?.length > 0"
-            class="text-xs text-yellow-500 flex items-center gap-1"
-          >
-            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            </svg>
-            {{ t('burn.notEnoughSpace') }}
-          </span>
-
-          <!-- Кнопка записи -->
-          <button
-            v-if="showBurnButton"
-            @click="emit('start-burn')"
-            :disabled="!canBurn || isBurning"
-            class="px-6 py-2 text-sm font-semibold rounded bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {{ t('burn.startBurn') }}
-          </button>
-
-          <!-- Кнопка стирания/форматирования -->
-          <button
-            v-if="showBlankButton"
-            @click="handleBlankOrFormat"
-            :disabled="!currentDevicePath || isBurning"
-            class="px-4 py-2 text-sm font-medium rounded bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {{ blankButtonLabel }}
-          </button>
-        </template>
+          <Flame :size="16" />
+          {{ t('burn.startBurn') }}
+        </button>
       </div>
     </template>
   </div>

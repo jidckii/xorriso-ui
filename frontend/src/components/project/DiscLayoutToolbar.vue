@@ -1,5 +1,6 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
+import { Save } from 'lucide-vue-next'
 
 const { t } = useI18n()
 
@@ -63,10 +64,7 @@ function onSelectAllChange(checked) {
       @click="emit('save-project')"
       class="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors"
     >
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-      </svg>
+      <Save :size="16" />
       {{ t('header.save') }}
     </button>
   </div>

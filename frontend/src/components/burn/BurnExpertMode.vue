@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Pencil, Check } from 'lucide-vue-next'
+import { Pencil, Check, Disc, Flame, Save } from 'lucide-vue-next'
 import { formatBytes } from '../../composables/useFormatBytes'
 
 const props = defineProps({
@@ -90,7 +90,7 @@ const canBurn = computed(() => {
     props.project?.entries?.length > 0 &&
     !props.isBurning &&
     hasMedia.value &&
-    (mediaStatus.value === 'blank' || mediaStatus.value === 'appendable') &&
+    (mediaStatus.value.includes('blank') || mediaStatus.value.includes('appendable')) &&
     hasEnoughSpace.value
   )
 })
@@ -249,7 +249,7 @@ const canBurn = computed(() => {
           <div class="relative inline-block">
             <select
               v-model="project.isoOptions.isoLevel"
-              class="appearance-none bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 pr-8 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+              class="appearance-none w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 pr-8 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
             >
               <option value="1">1</option>
               <option value="2">2</option>
@@ -303,8 +303,8 @@ const canBurn = computed(() => {
           {{ t('burn.burnOptions') }}
         </h3>
 
-        <!-- Скорость + Режим записи в grid 2 колонки -->
-        <div class="grid grid-cols-2 gap-3 mb-3">
+        <!-- Скорость + Режим записи -->
+        <div class="grid grid-cols-2 gap-4 mb-3">
           <div>
             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
               {{ t('burn.speed') }}
@@ -405,7 +405,7 @@ const canBurn = computed(() => {
           <div class="relative">
             <select
               v-model="blankMode"
-              class="appearance-none bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 pr-8 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+              class="appearance-none w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 pr-8 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
             >
               <option value="fast">{{ t('burn.fastBlank') }}</option>
               <option value="full">{{ t('burn.fullBlank') }}</option>
@@ -439,8 +439,9 @@ const canBurn = computed(() => {
         <button
           @click="emit('save-project')"
           :disabled="!project?.entries?.length"
-          class="px-6 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          class="inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
+          <Save :size="16" />
           {{ t('header.save') }}
         </button>
       </div>
@@ -459,17 +460,19 @@ const canBurn = computed(() => {
         <button
           @click="emit('create-iso')"
           :disabled="!project?.entries?.length || isBurning"
-          class="px-5 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          class="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
+          <Disc :size="16" />
           {{ t('burn.createIso') }}
         </button>
 
-        <!-- Записать -->
+        <!-- Прожиг -->
         <button
           @click="emit('start-burn')"
           :disabled="!canBurn"
-          class="px-6 py-2 text-sm font-semibold rounded bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          class="inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
+          <Flame :size="16" />
           {{ t('burn.startBurn') }}
         </button>
       </div>

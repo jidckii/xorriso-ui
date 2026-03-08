@@ -38,6 +38,7 @@ export const useDeviceStore = defineStore('device', () => {
       if (!currentDevicePath.value && devices.value.length > 0) {
         currentDevicePath.value = devices.value[0].path
         await fetchMediaInfo()
+        await fetchSpeeds()
       }
     } catch (error) {
       console.error('Failed to fetch devices:', error)

@@ -66,7 +66,7 @@ function onKeydown(e) {
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
   burnStore.init()
-  if (!deviceStore.speeds?.length && deviceStore.currentDevicePath) {
+  if (props.mode === 'burn' && !deviceStore.speeds?.length && deviceStore.currentDevicePath) {
     deviceStore.fetchSpeeds()
   }
 })
