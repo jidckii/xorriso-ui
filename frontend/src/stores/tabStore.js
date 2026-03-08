@@ -5,6 +5,7 @@ let nextTabId = 1
 
 function createProjectData(name = 'Untitled Project', volumeId = 'UNTITLED') {
   return {
+    version: 1,
     name,
     filePath: '',
     volumeId,

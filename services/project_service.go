@@ -18,6 +18,7 @@ func NewProjectService() *ProjectService {
 // NewProject creates a new empty project
 func (s *ProjectService) NewProject(name string, volumeID string) *models.Project {
 	return &models.Project{
+		Version:  1,
 		Name:     name,
 		VolumeID: volumeID,
 		Entries:  []models.FileEntry{},

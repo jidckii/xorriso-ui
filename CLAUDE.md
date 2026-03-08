@@ -128,7 +128,7 @@ xorriso запускается с `-pkt_output on` для машинночита
 - Фронтенд: `yarn`, НЕ `npm`
 - Go модуль: `xorriso-ui`
 - Тёмная тема по умолчанию (bg-gray-900, класс `dark` на `<html>`)
-- Формат проектов: `.xorriso-project` (JSON)
+- Формат проектов: `.xorriso-project` (JSON, версионирован). Документация: `docs/xorriso-project-format.md` — **обновлять при любых изменениях формата**
 - Интерфейс многовкладочный (tabStore)
 - Интернационализация: en/ru, ключи в `frontend/src/locales/`
 - UI иконки: lucide-vue-next; файловые иконки: material-file-icons

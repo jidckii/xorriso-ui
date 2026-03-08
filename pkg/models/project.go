@@ -3,6 +3,7 @@ package models
 import "time"
 
 type Project struct {
+	Version     uint8       `json:"version"`
 	Name        string      `json:"name"`
 	FilePath    string      `json:"filePath"`
 	VolumeID    string      `json:"volumeId"`
