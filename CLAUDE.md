@@ -1,103 +1,97 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # xorriso-ui
 
-GUI приложение для записи CD / DVD / Blu-ray / BDXL дисков с современным интерфейсом.
-Использует xorriso как бэкенд для работы с дисками и ISO-образами.
-Построено на Wails3 (Vue3 + Go), только Linux.
+GUI для записи CD/DVD/Blu-ray/BDXL дисков. Backend — Go + xorriso subprocess, frontend — Vue3, связка через Wails3. Только Linux.
 
-## Стек технологий
+## Стек
 
-- **Backend**: Go 1.25+, Wails3 v3.0.0-alpha.24 (команда `wails3`)
-- **Frontend**: Vue3 (`<script setup>`), Pinia, Vue Router (hash mode), Tailwind CSS v4
-- **Инструменты**: asdf (версии Go/Node), Yarn (пакеты фронтенда), Task (сборка)
-- **Зависимость**: xorriso 1.5.6+ (`/usr/bin/xorriso`)
+- **Backend**: Go 1.25+, Wails3 v3.0.0-alpha.64
+- **Frontend**: Vue3 (`<script setup>`), Pinia 3, Vue Router 4 (hash mode), Tailwind CSS v4, vue-i18n, reka-ui, lucide-vue-next
+- **Сборка**: Task (Taskfile.yml), Yarn, wails3 CLI
+- **Зависимости ОС**: xorriso 1.5.6+ (обязателен), mkisofs/cdrtools (опционален, для UDF)
 
-## Разработка
+## Команды разработки
 
 ```bash
-# Запуск в режиме разработки
-wails3 dev -config ./build/config.yml
+wails3 dev -config ./build/config.yml    # Dev mode с hot reload
+task build                                # Production сборка
+go build ./...                            # Проверка компиляции Go
+go test ./...                             # Запуск Go тестов
+wails3 generate bindings                  # Перегенерация JS биндингов
 
-# Сборка фронтенда
-cd frontend && yarn build
-
-# Сборка Go
-go build ./...
-
-# Генерация биндингов Wails
-wails3 generate bindings
-
-# Сборка продакшен
-task build
+cd frontend && yarn install               # Установка зависимостей фронтенда
+cd frontend && yarn build                 # Production сборка фронтенда
+cd frontend && yarn dev                   # Dev server фронтенда (без Wails)
 ```
 
-## Структура проекта
+## Архитектура
+
+### Двусторонняя коммуникация Frontend ↔ Backend
 
 ```
-main.go                    # Точка входа, регистрация Wails-сервисов
-Taskfile.yml               # Task runner (только linux)
-go.mod                     # Модуль: xorriso-ui
+Vue компонент → Pinia store → Wails binding (JS) → Go Service method
+Go Service → app.Event.Emit() → Wails Events → Events.On() в store → reactive UI
+```
 
-pkg/
-├── xorriso/
-│   ├── executor.go        # Запуск xorriso subprocess с -pkt_output on
-│   ├── parser.go          # Парсинг R:/I:/M: каналов, устройств, скоростей
-│   ├── commands.go        # Fluent builder командных строк xorriso
-│   └── progress.go        # Парсинг UPDATE/pacifier строк прогресса
-├── models/
-│   ├── device.go          # Device, MediaInfo, SpeedDescriptor
-│   ├── project.go         # Project, FileEntry, ISOOptions, BurnOptions
-│   ├── burn.go            # BurnState, BurnJob, BurnProgress, BurnResult
-│   └── events.go          # Константы имён Wails-событий
+- **Синхронные вызовы**: фронтенд вызывает Go-методы через автогенерированные биндинги (`frontend/bindings/`)
+- **Асинхронные push-уведомления**: Go отправляет события через `application.Get().Event.Emit()`, фронтенд слушает через `Events.On()` из `@wailsio/runtime`
+- Константы событий: `pkg/models/events.go`
 
-services/
-├── device_service.go      # ListDevices, GetMediaInfo, GetSpeeds, EjectDisc, polling
-├── project_service.go     # NewProject, Save/Open, AddFiles, RemoveEntry, BrowseDirectory
-├── burn_service.go        # StartBurn, CancelBurn, BlankDisc, FormatDisc
-└── settings_service.go    # GetSettings, SaveSettings (~/.config/xorriso-ui/settings.json)
+### Структура Go
 
+```
+main.go              — Точка входа: проверка xorriso, регистрация 4 сервисов, создание окна
+pkg/models/          — Структуры данных (Device, Project, BurnJob, события)
+pkg/xorriso/         — Интеграция с xorriso subprocess (-pkt_output on, парсинг R:/I:/M:)
+pkg/mkisofs/         — Опциональная интеграция mkisofs для UDF
+services/            — 4 Wails-сервиса (device, project, burn, settings)
+```
+
+### Структура Frontend
+
+```
 frontend/src/
-├── main.js                # Vue3 + Pinia + Router
-├── App.vue                # Корневой: AppHeader + router-view + AppStatusBar
-├── stores/
-│   ├── deviceStore.js     # Приводы, текущий привод, медиа-инфо
-│   ├── projectStore.js    # Файлы проекта, ISO-опции
-│   └── burnStore.js       # Состояние записи, прогресс
-├── views/
-│   ├── ProjectView.vue    # Главный экран (split: FileBrowser + DiscLayout)
-│   ├── BurnView.vue       # Диалог записи с прогрессом
-│   └── SettingsView.vue   # Настройки
-└── components/
-    ├── layout/            # AppHeader, AppSidebar, AppStatusBar
-    ├── device/            # DeviceSelector, DevicePanel, MediaInfo, SpeedSelector
-    ├── project/           # FileBrowser, DiscLayout, FileTree, CapacityBar, DragDropZone
-    ├── burn/              # BurnDialog, BurnOptions, BurnProgress, BurnLog
-    └── ui/                # Button, Modal, ProgressBar, Toast, DropdownMenu
+├── stores/          — 5 Pinia stores (device, project, burn, tab, theme)
+├── views/           — 4 страницы (Project, Burn, Settings, DiscInfo)
+├── components/      — layout/, device/, project/, burn/, ui/
+├── locales/         — en.json, ru.json
+└── i18n.js          — Интернационализация
 ```
 
-## Архитектура xorriso-интеграции
+Подробности: `frontend/CLAUDE.md`, `pkg/CLAUDE.md`
 
-xorriso запускается как subprocess с `-pkt_output on` для машинночитаемого вывода:
-- `R:` — результат команды (парсится в `ResultLines`)
-- `I:` — информация/ошибки (парсится в `InfoLines`)
-- `M:` — маркеры
+### xorriso subprocess
 
 Два режима работы:
-- **`executor.Run()`** — короткие операции (devices, toc, media info): запуск → ожидание → парсинг
-- **`executor.RunWithProgress()`** — долгие операции (burn, blank, format): парсинг UPDATE строк в реальном времени, трансляция через Wails Events
+- **`executor.Run()`** — короткие операции (devices, TOC, media info): запуск → ожидание → парсинг результата
+- **`executor.RunWithProgress()`** — долгие операции (burn, blank, format): streaming парсинг UPDATE строк, push через Wails Events
 
-## Wails3 API (важно)
+xorriso запускается с `-pkt_output on` для машинночитаемого вывода:
+- `R:` — результат команды → `CmdResult.ResultLines`
+- `I:` — информация/ошибки → `CmdResult.InfoLines`
+- `M:` — маркеры
 
-- Доступ к приложению из сервисов: `application.Get()` возвращает `*App`
-- Отправка событий: `app.Event.Emit(name, data...)` (поле `Event`, НЕ `Events`)
+## Wails3 API (критично)
+
+- Доступ к приложению: `application.Get()` возвращает `*App`
+- Отправка событий: `app.Event.Emit(name, data...)` — поле `Event`, **НЕ** `Events`
 - Регистрация сервисов: `application.NewService(instance)` — generic функция
-- Lifecycle сервисов: `ServiceStartup(ctx context.Context, options application.ServiceOptions) error`
+- Lifecycle: `ServiceStartup(ctx context.Context, options application.ServiceOptions) error`
 - **НЕ существует**: `application.WailsEvent`, `options.Application`, `s.app.Events`
+- Frontend events: `import { Events } from '@wailsio/runtime'` → `Events.On()` / `Events.Off()`
 
 ## Соглашения
 
 - Только Linux, без кроссплатформенности
-- Пакеты в `pkg/`, НЕ в `internal/`
-- Тёмная тема по умолчанию (bg-gray-900)
-- Фронтенд собирается через `yarn`, НЕ `npm`
+- Go пакеты в `pkg/`, НЕ в `internal/`
+- Фронтенд: `yarn`, НЕ `npm`
 - Go модуль: `xorriso-ui`
+- Тёмная тема по умолчанию (bg-gray-900, класс `dark` на `<html>`)
 - Формат проектов: `.xorriso-project` (JSON)
+- Интерфейс многовкладочный (tabStore)
+- Интернационализация: en/ru, ключи в `frontend/src/locales/`
+- UI иконки: lucide-vue-next; файловые иконки: material-file-icons
+- Headless UI компоненты: reka-ui (TreeRoot/TreeItem и т.д.)
