@@ -24,14 +24,15 @@ type FileEntry struct {
 }
 
 type ISOOptions struct {
-	UDF        bool `json:"udf"`
-	ISOLevel   int  `json:"isoLevel"`
-	RockRidge  bool `json:"rockRidge"`
-	Joliet     bool `json:"joliet"`
-	HFSPlus    bool `json:"hfsPlus"`
-	Zisofs     bool `json:"zisofs"`
-	MD5        bool `json:"md5"`
-	BackupMode bool `json:"backupMode"`
+	UDF         bool   `json:"udf"`
+	ISOLevel    int    `json:"isoLevel"`
+	RockRidge   bool   `json:"rockRidge"`
+	Joliet      bool   `json:"joliet"`
+	HFSPlus     bool   `json:"hfsPlus"`
+	Zisofs      bool   `json:"zisofs"`
+	MD5         bool   `json:"md5"`
+	BackupMode  bool   `json:"backupMode"`
+	PublisherID string `json:"publisherId"`
 }
 
 type BurnOptions struct {

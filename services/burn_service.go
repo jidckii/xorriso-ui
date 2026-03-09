@@ -21,6 +21,11 @@ const (
 	blankFormatTimeout = 30 * time.Minute
 )
 
+const (
+	appApplicationID = "XORRISO-UI (C) Evgeniy Medvedev"
+	appSystemID      = "LINUX"
+)
+
 type BurnService struct {
 	executor   xorriso.Runner
 	mu         sync.Mutex
@@ -198,6 +203,12 @@ func validateBurnOptions(opts models.BurnOptions) error {
 func (s *BurnService) buildISOCommand(cmd *xorriso.CommandBuilder, project *models.Project) {
 	if project.VolumeID != "" {
 		cmd.VolumeID(project.VolumeID)
+	}
+
+	cmd.ApplicationID(appApplicationID)
+	cmd.SystemID(appSystemID)
+	if project.ISOOptions.PublisherID != "" {
+		cmd.Publisher(project.ISOOptions.PublisherID)
 	}
 
 	// ISO level

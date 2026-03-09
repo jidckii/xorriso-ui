@@ -347,6 +347,26 @@ const availableOperations = computed(() => {
         </div>
       </div>
 
+      <!-- Секция: Метаданные тома -->
+      <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
+          {{ t('burn.volumeMetadata') }}
+        </h3>
+        <div>
+          <label class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {{ t('burn.publisherId') }}
+            <InfoTooltip :text="t('burn.tooltips.publisherId')" />
+          </label>
+          <input
+            type="text"
+            v-model="project.isoOptions.publisherId"
+            maxlength="128"
+            :placeholder="t('burn.publisherPlaceholder')"
+            class="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
+          />
+        </div>
+      </div>
+
       <!-- Секция 4: Параметры записи -->
       <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
         <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">

@@ -20,6 +20,7 @@ function createProjectData(name = 'DISC_1', volumeId = 'DISC_1') {
       zisofs: false,
       md5: true,
       backupMode: false,
+      publisherId: '',
       bootImage: '',
       bootCatalog: '',
       efiBootImage: '',

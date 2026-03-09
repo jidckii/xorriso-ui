@@ -87,6 +87,9 @@
     "zisofs": "zisofs (compression)",
     "md5": "MD5 checksums",
     "backupMode": "Backup mode",
+    "volumeMetadata": "Volume Metadata",
+    "publisherId": "Publisher",
+    "publisherPlaceholder": "e.g. your name or organization",
     "padding": "Padding (KiB)",
     "tooltips": {
       "learnMore": "Learn more",
@@ -98,6 +101,7 @@
       "zisofs": "Transparent compression of file data in ISO 9660. Reduces image size but may decrease read performance.",
       "md5": "Embed MD5 checksums for files and the entire image. Allows integrity verification after burning.",
       "backupMode": "Optimizes for backup: records all file attributes, ACLs, and hardlinks for accurate restoration.",
+      "publisherId": "Publisher identifier recorded in the ISO 9660 Primary Volume Descriptor. Up to 128 characters.",
       "speed": "Write speed for the drive. 'Auto' lets the drive select the optimal speed for the media.",
       "burnMode": "TAO writes track by track with gaps. SAO/DAO writes the entire session at once — better for audio and compatibility.",
       "verify": "Read back the disc after burning and compare with source data to ensure a successful write.",

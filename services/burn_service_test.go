@@ -139,13 +139,14 @@ func TestBuildISOCommand(t *testing.T) {
 			{SourcePath: "/home/user/dir", DestPath: "/dir", IsDir: true},
 		},
 		ISOOptions: models.ISOOptions{
-			ISOLevel:   3,
-			RockRidge:  true,
-			Joliet:     true,
-			HFSPlus:    true,
-			Zisofs:     true,
-			MD5:        true,
-			BackupMode: true,
+			ISOLevel:    3,
+			RockRidge:   true,
+			Joliet:      true,
+			HFSPlus:     true,
+			Zisofs:      true,
+			MD5:         true,
+			BackupMode:  true,
+			PublisherID: "Test Publisher",
 		},
 	}
 
@@ -165,6 +166,9 @@ func TestBuildISOCommand(t *testing.T) {
 		"-zisofs", "by_magic",
 		"-md5", "on",
 		"-for_backup",
+		"-publisher", "Test Publisher",
+		"-application_id", "XORRISO-UI (C) Evgeniy Medvedev",
+		"-system_id", "LINUX",
 		"-map", "/home/user/file.txt", "/file.txt",
 		"-map", "/home/user/dir", "/dir",
 	}
@@ -203,6 +207,17 @@ func TestBuildISOCommand_Minimal(t *testing.T) {
 	// Joliet=false — не должно быть -joliet вообще (xorriso default — off)
 	if containsArg(args, "-joliet") {
 		t.Error("should not have -joliet when Joliet is false (xorriso default is off)")
+	}
+	// -application_id и -system_id должны быть всегда
+	if !containsArg(args, "-application_id") {
+		t.Error("expected -application_id to always be present")
+	}
+	if !containsArg(args, "-system_id") {
+		t.Error("expected -system_id to always be present")
+	}
+	// -publisher не должно быть (PublisherID пустой)
+	if containsArg(args, "-publisher") {
+		t.Error("should not have -publisher when PublisherID is empty")
 	}
 }
 
@@ -262,9 +277,10 @@ func TestGetBurnCommand_Full(t *testing.T) {
 			{SourcePath: "/home/user/docs", DestPath: "/docs", IsDir: true},
 		},
 		ISOOptions: models.ISOOptions{
-			ISOLevel:  3,
-			RockRidge: true,
-			Joliet:    true,
+			ISOLevel:    3,
+			RockRidge:   true,
+			Joliet:      true,
+			PublisherID: "Test Publisher",
 		},
 	}
 
@@ -295,6 +311,9 @@ func TestGetBurnCommand_Full(t *testing.T) {
 		"-iso_level 3",
 		"-rockridge on",
 		"-joliet on",
+		"-publisher Test Publisher",
+		"-application_id XORRISO-UI (C) Evgeniy Medvedev",
+		"-system_id LINUX",
 		"-speed 4x",
 		"-write_type SAO",
 		"-padding 300k",

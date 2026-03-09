@@ -36,7 +36,12 @@ func (b *CommandBuilder) PrintSize() *CommandBuilder      { return b.add("-print
 func (b *CommandBuilder) PVDInfo() *CommandBuilder        { return b.add("-pvd_info") }
 
 // ISO options
-func (b *CommandBuilder) VolumeID(id string) *CommandBuilder { return b.add("-volid", id) }
+func (b *CommandBuilder) VolumeID(id string) *CommandBuilder  { return b.add("-volid", id) }
+func (b *CommandBuilder) Publisher(id string) *CommandBuilder { return b.add("-publisher", id) }
+func (b *CommandBuilder) ApplicationID(id string) *CommandBuilder {
+	return b.add("-application_id", id)
+}
+func (b *CommandBuilder) SystemID(id string) *CommandBuilder { return b.add("-system_id", id) }
 func (b *CommandBuilder) RockRidge(on bool) *CommandBuilder {
 	if on {
 		return b.add("-rockridge", "on")
