@@ -46,24 +46,9 @@ function confirmName() {
   editingName.value = false
 }
 
-// Режим очистки (для секции Blank/Format)
-const blankMode = ref('fast')
-
 // --- Вычисляемые свойства состояния медиа ---
 
 const mediaStatus = computed(() => props.mediaInfo?.mediaStatus || '')
-
-const isErasable = computed(() => props.mediaInfo?.erasable || false)
-
-const isFormattable = computed(() => {
-  const type = (props.mediaInfo?.mediaType || '').toUpperCase()
-  return (
-    type.includes('BD-RE') ||
-    type.includes('DVD-RAM') ||
-    type.includes('DVD+RW') ||
-    type.includes('DVD-RW')
-  )
-})
 
 const hasMedia = computed(() => !!props.mediaInfo && !!props.mediaInfo.mediaType)
 
@@ -94,6 +79,62 @@ const canBurn = computed(() => {
     (mediaStatus.value.includes('blank') || mediaStatus.value.includes('appendable')) &&
     hasEnoughSpace.value
   )
+})
+
+// Тип медиа для матрицы операций
+const mediaType = computed(() => (props.mediaInfo?.mediaType || '').toUpperCase())
+
+const isCdRw = computed(() => mediaType.value.includes('CD-RW'))
+const isDvdRw = computed(() => mediaType.value.includes('DVD-RW'))
+const isDvdPlusRw = computed(() => mediaType.value.includes('DVD+RW'))
+const isDvdRam = computed(() => mediaType.value.includes('DVD-RAM'))
+const isBdRe = computed(() => mediaType.value.includes('BD-RE'))
+
+// Адаптивные операции по типу носителя
+const availableOperations = computed(() => {
+  const ops = []
+
+  // Fast blank: CD-RW, DVD-RW
+  if (isCdRw.value || isDvdRw.value) {
+    ops.push({
+      id: 'fast',
+      label: t('burn.fastBlank'),
+      tooltip: t('burn.tooltips.blankFast'),
+      action: () => emit('blank-disc', 'fast'),
+    })
+  }
+
+  // Full blank: CD-RW, DVD-RW
+  if (isCdRw.value || isDvdRw.value) {
+    ops.push({
+      id: 'full',
+      label: t('burn.fullBlank'),
+      tooltip: t('burn.tooltips.blankFull'),
+      action: () => emit('blank-disc', 'full'),
+    })
+  }
+
+  // Deformat: DVD-RW only
+  if (isDvdRw.value) {
+    ops.push({
+      id: 'deformat',
+      label: t('burn.deformat'),
+      tooltip: t('burn.tooltips.deformat'),
+      action: () => emit('blank-disc', 'deformat'),
+    })
+  }
+
+  // Format: DVD-RW, DVD+RW, DVD-RAM, BD-RE
+  if (isDvdRw.value || isDvdPlusRw.value || isDvdRam.value || isBdRe.value) {
+    ops.push({
+      id: 'format',
+      label: t('burn.formatDisc'),
+      tooltip: t('burn.tooltips.formatDisc'),
+      action: () => emit('format-disc', 'default'),
+    })
+  }
+
+  return ops
 })
 </script>
 
@@ -414,41 +455,29 @@ const canBurn = computed(() => {
         </div>
       </div>
 
-      <!-- Секция 5: Blank / Format (только в режиме burn) -->
-      <div v-if="mode === 'burn'" class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+      <!-- Секция 5: Blank / Format (только для перезаписываемых носителей) -->
+      <div v-if="mode === 'burn' && hasMedia && availableOperations.length > 0" class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
         <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
           {{ t('burn.blankDisc') }}
         </h3>
-        <div class="flex items-center gap-3 flex-wrap">
-          <div class="relative">
-            <select
-              v-model="blankMode"
-              class="appearance-none w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded px-3 py-1.5 pr-8 border border-gray-400 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+        <div class="space-y-2">
+          <div
+            v-for="op in availableOperations"
+            :key="op.id"
+            class="flex items-center justify-between"
+          >
+            <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
+              {{ op.label }}
+              <InfoTooltip :text="op.tooltip" />
+            </span>
+            <button
+              @click="op.action()"
+              :disabled="!currentDevicePath || isBurning"
+              class="px-3 py-1 text-xs font-medium rounded bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <option value="fast">{{ t('burn.fastBlank') }}</option>
-              <option value="full">{{ t('burn.fullBlank') }}</option>
-              <option value="deformat">{{ t('burn.deformat') }}</option>
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-              <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+              {{ op.label }}
+            </button>
           </div>
-          <button
-            @click="emit('blank-disc', blankMode)"
-            :disabled="!currentDevicePath || isBurning"
-            class="px-4 py-1.5 text-sm font-medium rounded bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {{ t('burn.blank') }}
-          </button>
-          <button
-            @click="emit('format-disc', blankMode)"
-            :disabled="!currentDevicePath || isBurning"
-            class="px-4 py-1.5 text-sm font-medium rounded bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {{ t('burn.formatDisc') }}
-          </button>
         </div>
       </div>
 

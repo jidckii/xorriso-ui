@@ -87,30 +87,11 @@ const canBurn = computed(() => {
   )
 })
 
-// Показывать кнопку очистки/форматирования
-const showBlankButton = computed(() =>
-  isErasable.value && (
-    mediaStatus.value.includes('blank') ||
-    mediaStatus.value.includes('appendable') ||
-    mediaStatus.value.includes('complete')
-  )
-)
+const isRewritable = computed(() => isErasable.value || isFormattable.value)
+const isNotBlank = computed(() => !mediaStatus.value.includes('blank'))
 
-// Нет медиа вообще
-const noMedia = computed(() => !hasMedia.value)
-
-// Текст кнопки стирания
-const blankButtonLabel = computed(() =>
-  isFormattable.value ? t('burn.formatDisc') : t('burn.blank')
-)
-
-function handleBlankOrFormat() {
-  if (isFormattable.value) {
-    emit('format-disc', 'default')
-  } else {
-    emit('blank-disc', 'fast')
-  }
-}
+// Локальное состояние: очистить перед записью
+const eraseBeforeBurn = ref(true)
 </script>
 
 <template>
@@ -273,6 +254,18 @@ function handleBlankOrFormat() {
             {{ t('burn.ejectWhenDone') }}
             <InfoTooltip :text="t('burn.tooltips.eject')" />
           </label>
+          <label
+            v-if="isRewritable && isNotBlank"
+            class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              v-model="eraseBeforeBurn"
+              class="accent-yellow-500"
+            />
+            {{ t('burn.eraseBeforeBurn') }}
+            <InfoTooltip :text="t('burn.tooltips.eraseBeforeBurn')" />
+          </label>
         </div>
       </div>
 
@@ -301,16 +294,6 @@ function handleBlankOrFormat() {
           {{ t('burn.notEnoughSpace') }}
         </span>
 
-        <!-- Кнопка стирания/форматирования -->
-        <button
-          v-if="showBlankButton"
-          @click="handleBlankOrFormat"
-          :disabled="!currentDevicePath || isBurning"
-          class="px-4 py-2 text-sm font-medium rounded bg-yellow-600 hover:bg-yellow-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          {{ blankButtonLabel }}
-        </button>
-
         <!-- Создать ISO -->
         <button
           @click="emit('create-iso')"
@@ -323,7 +306,7 @@ function handleBlankOrFormat() {
 
         <!-- Прожиг -->
         <button
-          @click="emit('start-burn')"
+          @click="emit('start-burn', eraseBeforeBurn && isRewritable && isNotBlank)"
           :disabled="!canBurn"
           class="inline-flex items-center gap-1.5 px-6 py-2 text-sm font-semibold rounded bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >

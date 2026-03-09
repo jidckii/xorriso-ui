@@ -77,9 +77,38 @@ onUnmounted(() => {
 
 // --- Действия записи ---
 
-async function startBurn() {
+async function startBurn(eraseBeforeBurn = false) {
   const project = tabStore.activeProject
   step.value = 'burning'
+
+  if (eraseBeforeBurn) {
+    // Определяем тип операции по типу медиа
+    const mediaType = (deviceStore.mediaInfo?.mediaType || '').toUpperCase()
+    const needsFormat = mediaType.includes('BD-RE') || mediaType.includes('DVD-RAM') || mediaType.includes('DVD+RW') || mediaType.includes('DVD-RW')
+
+    if (needsFormat) {
+      await handleFormat('default')
+    } else {
+      await handleBlank('fast')
+    }
+
+    // Ждём завершения операции очистки
+    await new Promise((resolve) => {
+      const checkDone = setInterval(() => {
+        if (!burnStore.isBurning) {
+          clearInterval(checkDone)
+          resolve()
+        }
+      }, 500)
+    })
+
+    // Обновляем информацию о носителе
+    await deviceStore.fetchMediaInfo()
+
+    // Сбрасываем состояние перед записью
+    burnStore.resetJob()
+  }
+
   await burnStore.startBurn(project, deviceStore.currentDevicePath, project.burnOptions)
   const checkDone = setInterval(() => {
     if (!burnStore.isBurning && burnStore.currentJob) {
