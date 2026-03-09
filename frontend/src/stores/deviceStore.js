@@ -85,6 +85,8 @@ export const useDeviceStore = defineStore('device', () => {
     try {
       await EjectDisc(currentDevicePath.value)
       mediaInfo.value = null
+      speeds.value = []
+      await fetchDevices()
     } catch (error) {
       console.error('Failed to eject disc:', error)
     }
@@ -94,8 +96,12 @@ export const useDeviceStore = defineStore('device', () => {
     if (!currentDevicePath.value) return
     try {
       await LoadTray(currentDevicePath.value)
-      // After tray closes, refresh media info
-      setTimeout(() => fetchMediaInfo(), 2000)
+      // After tray closes, refresh device info and media
+      setTimeout(async () => {
+        await fetchDevices()
+        await fetchMediaInfo()
+        await fetchSpeeds()
+      }, 2000)
     } catch (error) {
       console.error('Failed to load tray:', error)
     }

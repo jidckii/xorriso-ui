@@ -100,8 +100,15 @@ func (s *DeviceService) ListDevices() ([]models.Device, error) {
 	return devices, nil
 }
 
+// invalidateProfileCache удаляет кеш профилей для устройства,
+// чтобы при следующем ListDevices профили были перезапрошены у xorriso.
+func (s *DeviceService) invalidateProfileCache(devicePath string) {
+	s.mu.Lock()
+	delete(s.profileCache, devicePath)
+	s.mu.Unlock()
+}
+
 // getCachedProfiles возвращает профили привода из кэша или запрашивает через xorriso.
-// Профили привода (поддерживаемые типы дисков) не меняются — кэшируем навсегда.
 func (s *DeviceService) getCachedProfiles(devicePath string) ([]models.MediaProfile, error) {
 	s.mu.RLock()
 	if cached, ok := s.profileCache[devicePath]; ok {
@@ -322,6 +329,8 @@ func (s *DeviceService) LoadTray(devicePath string) error {
 	if err != nil {
 		return fmt.Errorf("load tray failed: %s: %w", strings.TrimSpace(string(output)), err)
 	}
+
+	s.invalidateProfileCache(devicePath)
 	return nil
 }
 
@@ -335,6 +344,8 @@ func (s *DeviceService) EjectDisc(devicePath string) error {
 	if err != nil {
 		return fmt.Errorf("eject failed: %s: %w", strings.TrimSpace(string(output)), err)
 	}
+
+	s.invalidateProfileCache(devicePath)
 	return nil
 }
 
@@ -412,6 +423,7 @@ func (s *DeviceService) watchMediaChanges() {
 			continue
 		}
 		lastEvent[devPath] = now
+		s.invalidateProfileCache(devPath)
 		s.emitEvent(models.EventDeviceMediaChanged, map[string]string{
 			"devicePath": devPath,
 		})

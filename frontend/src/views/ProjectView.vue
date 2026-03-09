@@ -104,7 +104,7 @@ function formatBytes(bytes) {
         </span>
         <button
           @click="tabStore.openBurnModal('burn')"
-          :disabled="!currentProject?.entries?.length"
+          :disabled="!currentProject?.entries?.length || !deviceStore.hasMedia"
           class="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap shrink-0"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
