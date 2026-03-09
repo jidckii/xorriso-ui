@@ -3,6 +3,7 @@ import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Pencil, Check, Disc, Flame, Save } from 'lucide-vue-next'
 import { formatBytes } from '../../composables/useFormatBytes'
+import InfoTooltip from '../ui/InfoTooltip.vue'
 
 const props = defineProps({
   mode: { type: String, default: 'burn' },
@@ -261,6 +262,7 @@ function handleBlankOrFormat() {
               class="accent-blue-500"
             />
             {{ t('burn.verifyAfterBurn') }}
+            <InfoTooltip :text="t('burn.tooltips.verify')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input
@@ -269,6 +271,7 @@ function handleBlankOrFormat() {
               class="accent-blue-500"
             />
             {{ t('burn.ejectWhenDone') }}
+            <InfoTooltip :text="t('burn.tooltips.eject')" />
           </label>
         </div>
       </div>

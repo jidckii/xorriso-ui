@@ -86,7 +86,36 @@
     "zisofs": "zisofs (compression)",
     "md5": "MD5 checksums",
     "backupMode": "Backup mode",
-    "padding": "Padding (KiB)"
+    "padding": "Padding (KiB)",
+    "tooltips": {
+      "learnMore": "Learn more",
+      "isoLevel": "Defines maximum file name length and file size. Level 1: 8.3 names, 4GB limit. Level 3: long names, no size limit.",
+      "udf": "Universal Disk Format — modern filesystem for DVD/BD. Supports large files (>4GB), long filenames, and Unicode.",
+      "rockRidge": "POSIX extension for ISO 9660. Preserves Unix permissions, symlinks, long filenames, and deep directory paths.",
+      "joliet": "Microsoft extension for ISO 9660. Adds support for long filenames (up to 64 chars) and Unicode on Windows.",
+      "hfsPlus": "Apple's filesystem. Enables the disc to be readable on macOS with full metadata support.",
+      "zisofs": "Transparent compression of file data in ISO 9660. Reduces image size but may decrease read performance.",
+      "md5": "Embed MD5 checksums for files and the entire image. Allows integrity verification after burning.",
+      "backupMode": "Optimizes for backup: records all file attributes, ACLs, and hardlinks for accurate restoration.",
+      "speed": "Write speed for the drive. 'Auto' lets the drive select the optimal speed for the media.",
+      "burnMode": "TAO writes track by track with gaps. SAO/DAO writes the entire session at once — better for audio and compatibility.",
+      "verify": "Read back the disc after burning and compare with source data to ensure a successful write.",
+      "eject": "Automatically open the disc tray when the burn operation finishes.",
+      "dummyMode": "Simulate the burn process without actually writing data. Useful for testing settings before a real burn.",
+      "closeDisc": "Finalize the disc so no more sessions can be added. Required for maximum compatibility with readers.",
+      "streamRecording": "For Blu-ray: write data as a continuous stream without defect management. Faster but less resilient to disc errors.",
+      "multisession": "Keep the disc open so additional data can be appended in future sessions.",
+      "padding": "Extra empty space (in KiB) added after the data area. Helps with read compatibility on some drives."
+    },
+    "tooltipLinks": {
+      "isoLevel": "https://wiki.osdev.org/ISO_9660",
+      "udf": "https://en.wikipedia.org/wiki/Universal_Disk_Format",
+      "rockRidge": "https://en.wikipedia.org/wiki/Rock_Ridge",
+      "joliet": "https://en.wikipedia.org/wiki/Joliet_%28file_system%29",
+      "hfsPlus": "https://en.wikipedia.org/wiki/HFS_Plus",
+      "zisofs": "https://dev.lovelyhq.com/libburnia/web/wiki/zisofs",
+      "burnMode": "https://en.wikipedia.org/wiki/Optical_disc_recording_modes"
+    }
   },
   "burnOptions": {
     "writeSpeed": "Write Speed",

@@ -3,6 +3,7 @@ import { ref, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Pencil, Check, Disc, Flame, Save } from 'lucide-vue-next'
 import { formatBytes } from '../../composables/useFormatBytes'
+import InfoTooltip from '../ui/InfoTooltip.vue'
 
 const props = defineProps({
   mode: { type: String, default: 'burn' },
@@ -243,8 +244,9 @@ const canBurn = computed(() => {
 
         <!-- ISO Level — отдельный ряд -->
         <div class="mb-3">
-          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+          <label class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
             {{ t('burn.isoLevel') }}
+            <InfoTooltip :text="t('burn.tooltips.isoLevel')" :link="t('burn.tooltipLinks.isoLevel')" />
           </label>
           <div class="relative inline-block">
             <select
@@ -269,30 +271,37 @@ const canBurn = computed(() => {
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.isoOptions.udf" class="accent-blue-500" />
             {{ t('burn.udf') }}
+            <InfoTooltip :text="t('burn.tooltips.udf')" :link="t('burn.tooltipLinks.udf')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.isoOptions.rockRidge" class="accent-blue-500" />
             {{ t('burn.rockRidge') }}
+            <InfoTooltip :text="t('burn.tooltips.rockRidge')" :link="t('burn.tooltipLinks.rockRidge')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.isoOptions.joliet" class="accent-blue-500" />
             {{ t('burn.joliet') }}
+            <InfoTooltip :text="t('burn.tooltips.joliet')" :link="t('burn.tooltipLinks.joliet')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.isoOptions.hfsPlus" class="accent-blue-500" />
             {{ t('burn.hfsPlus') }}
+            <InfoTooltip :text="t('burn.tooltips.hfsPlus')" :link="t('burn.tooltipLinks.hfsPlus')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.isoOptions.zisofs" class="accent-blue-500" />
             {{ t('burn.zisofs') }}
+            <InfoTooltip :text="t('burn.tooltips.zisofs')" :link="t('burn.tooltipLinks.zisofs')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.isoOptions.md5" class="accent-blue-500" />
             {{ t('burn.md5') }}
+            <InfoTooltip :text="t('burn.tooltips.md5')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.isoOptions.backupMode" class="accent-blue-500" />
             {{ t('burn.backupMode') }}
+            <InfoTooltip :text="t('burn.tooltips.backupMode')" />
           </label>
         </div>
       </div>
@@ -306,8 +315,9 @@ const canBurn = computed(() => {
         <!-- Скорость + Режим записи -->
         <div class="grid grid-cols-2 gap-4 mb-3">
           <div>
-            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <label class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
               {{ t('burn.speed') }}
+              <InfoTooltip :text="t('burn.tooltips.speed')" />
             </label>
             <div class="relative">
               <select
@@ -327,8 +337,9 @@ const canBurn = computed(() => {
             </div>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <label class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
               {{ t('burn.burnMode') }}
+              <InfoTooltip :text="t('burn.tooltips.burnMode')" :link="t('burn.tooltipLinks.burnMode')" />
             </label>
             <div class="relative">
               <select
@@ -353,26 +364,32 @@ const canBurn = computed(() => {
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.burnOptions.verify" class="accent-blue-500" />
             {{ t('burn.verifyAfterBurn') }}
+            <InfoTooltip :text="t('burn.tooltips.verify')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.burnOptions.eject" class="accent-blue-500" />
             {{ t('burn.ejectWhenDone') }}
+            <InfoTooltip :text="t('burn.tooltips.eject')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.burnOptions.dummyMode" class="accent-yellow-500" />
             {{ t('burn.simulationMode') }}
+            <InfoTooltip :text="t('burn.tooltips.dummyMode')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.burnOptions.closeDisc" class="accent-blue-500" />
             {{ t('burn.closeDisc') }}
+            <InfoTooltip :text="t('burn.tooltips.closeDisc')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.burnOptions.streamRecording" class="accent-blue-500" />
             {{ t('burn.streamRecording') }}
+            <InfoTooltip :text="t('burn.tooltips.streamRecording')" />
           </label>
           <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
             <input type="checkbox" v-model="project.burnOptions.multisession" class="accent-blue-500" />
             {{ t('burn.multisession') }}
+            <InfoTooltip :text="t('burn.tooltips.multisession')" />
           </label>
         </div>
 
@@ -383,8 +400,9 @@ const canBurn = computed(() => {
 
         <!-- Padding — отдельно -->
         <div class="flex items-center gap-3">
-          <label class="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+          <label class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 shrink-0">
             {{ t('burn.padding') }}:
+            <InfoTooltip :text="t('burn.tooltips.padding')" />
           </label>
           <input
             type="number"
