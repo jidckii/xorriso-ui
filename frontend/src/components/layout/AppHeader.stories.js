@@ -1,9 +1,7 @@
 import { getCurrentInstance } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import AppHeader from './AppHeader.vue'
-import { useTabStore } from '../../stores/tabStore'
 
-// Простой mock-роутер для Storybook
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
@@ -23,7 +21,6 @@ export default {
       components: { story },
       setup() {
         const app = getCurrentInstance().appContext.app
-        // Регистрируем роутер, если ещё не установлен
         if (!app.config.globalProperties.$router) {
           app.use(router)
         }
@@ -34,35 +31,14 @@ export default {
   ],
 }
 
-export const Default = {
-  decorators: [
-    (story) => ({
-      components: { story },
-      setup() {
-        const tabStore = useTabStore()
-        tabStore.tabs = [
-          { id: 'tab1', label: 'My Project', projectData: { modified: false } },
-        ]
-        tabStore.activeTabId = 'tab1'
-        tabStore.showDiscInfo = false
-        return {}
-      },
-      template: '<story />',
-    }),
-  ],
-}
+export const Default = {}
 
-export const DiscInfoActive = {
+export const OnSettingsPage = {
   decorators: [
     (story) => ({
       components: { story },
       setup() {
-        const tabStore = useTabStore()
-        tabStore.tabs = [
-          { id: 'tab1', label: 'My Project', projectData: { modified: false } },
-        ]
-        tabStore.activeTabId = 'tab1'
-        tabStore.showDiscInfo = true
+        router.push('/settings')
         return {}
       },
       template: '<story />',
