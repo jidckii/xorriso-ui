@@ -186,6 +186,7 @@ async function loadDirectory(path) {
   const result = await projectStore.browseDirectory(path)
   entries.value = result || []
   selectedPaths.value = new Set()
+  lastClickedPath.value = null
   if (currentProject.value) {
     currentProject.value.selectedBrowseFiles = []
   }
@@ -231,9 +232,31 @@ async function toggleExpand(entry) {
   }
 }
 
-// Selection (always toggle mode for multi-select)
+// Последний кликнутый элемент для Shift-выделения диапазона
+const lastClickedPath = ref(null)
+
+// Selection (toggle + Shift-диапазон)
 function toggleSelection(entry, event) {
   const key = entry.sourcePath
+  const flat = flatVisibleEntries.value
+
+  // Shift+Click: выделить диапазон от lastClickedPath до текущего элемента
+  if (event?.shiftKey && lastClickedPath.value) {
+    const lastIdx = flat.findIndex(e => e.sourcePath === lastClickedPath.value)
+    const currIdx = flat.findIndex(e => e.sourcePath === key)
+    if (lastIdx !== -1 && currIdx !== -1) {
+      const from = Math.min(lastIdx, currIdx)
+      const to = Math.max(lastIdx, currIdx)
+      for (let i = from; i <= to; i++) {
+        selectedPaths.value.add(flat[i].sourcePath)
+      }
+      selectedPaths.value = new Set(selectedPaths.value)
+      syncSelection()
+      return
+    }
+  }
+
+  // Обычный toggle
   const selecting = !selectedPaths.value.has(key)
 
   if (selecting) {
@@ -247,6 +270,7 @@ function toggleSelection(entry, event) {
     propagateSelection(key, selecting)
   }
 
+  lastClickedPath.value = key
   selectedPaths.value = new Set(selectedPaths.value)
   syncSelection()
 }

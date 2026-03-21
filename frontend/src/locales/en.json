@@ -238,7 +238,8 @@
     "add": "Add",
     "used": "used",
     "free": "free",
-    "overCapacity": "over capacity!"
+    "overCapacity": "over capacity!",
+    "folder": "Folder"
   },
   "phases": {
     "idle": "Idle",

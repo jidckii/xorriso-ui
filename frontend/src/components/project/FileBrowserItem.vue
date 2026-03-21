@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ChevronRight } from 'lucide-vue-next'
 import FileIcon from '../ui/FileIcon.vue'
 import ImagePreviewTooltip from '../ui/ImagePreviewTooltip.vue'
@@ -19,6 +20,8 @@ const props = defineProps({
 
 const emit = defineEmits(['toggle-expand', 'toggle-selection', 'dblclick', 'contextmenu', 'dragstart'])
 
+const { t } = useI18n()
+
 function isExpanded(entry) {
   return props.expandedDirs.has(entry.sourcePath)
 }
@@ -36,6 +39,14 @@ function getChildren(entry) {
 
 function onDragStart(event) {
   emit('dragstart', props.entry, event)
+}
+
+function onMouseDown(event) {
+  // Shift+Click на draggable не генерирует click — обрабатываем на mousedown
+  if (event.shiftKey) {
+    event.preventDefault()
+    emit('toggle-selection', props.entry, event)
+  }
 }
 
 // Image preview tooltip state
@@ -58,6 +69,27 @@ function onMouseMove(e) {
 function onMouseLeave() {
   previewVisible.value = false
 }
+
+function getExtension(name) {
+  const dot = name.lastIndexOf('.')
+  return dot > 0 ? name.slice(dot + 1).toLowerCase() : ''
+}
+
+function getTypeLabel(entry) {
+  if (entry.isDir) return t('common.folder')
+  return getExtension(entry.name)
+}
+
+// Форматирует дату модификации в локальный формат дд.мм.гг чч:мм
+function formatDate(modTime) {
+  if (!modTime) return ''
+  const date = new Date(modTime)
+  return (
+    date.toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }) +
+    ' ' +
+    date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })
+  )
+}
 </script>
 
 <template>
@@ -72,7 +104,8 @@ function onMouseLeave() {
       'ring-1 ring-blue-400 ring-inset': focusedPath === entry.sourcePath && isSelected(entry),
     }"
     :style="{ paddingLeft: (depth * 16 + 8) + 'px', paddingRight: '8px' }"
-    @click="emit('toggle-selection', entry, $event)"
+    @mousedown="onMouseDown"
+    @click="!$event.shiftKey && emit('toggle-selection', entry, $event)"
     @dblclick="emit('dblclick', entry)"
     @contextmenu.prevent="emit('contextmenu', entry, $event)"
     @dragstart="onDragStart"
@@ -97,7 +130,7 @@ function onMouseLeave() {
     <input
       type="checkbox"
       :checked="isSelected(entry)"
-      @click.stop="emit('toggle-selection', entry, { ctrlKey: true })"
+      @click.stop="emit('toggle-selection', entry, $event)"
       class="w-3.5 h-3.5 accent-blue-600 shrink-0 cursor-pointer"
     />
 
@@ -114,9 +147,19 @@ function onMouseLeave() {
       {{ entry.name }}
     </span>
 
+    <!-- Date -->
+    <span class="text-xs text-gray-500 shrink-0 w-28 text-right">
+      {{ formatDate(entry.modTime) }}
+    </span>
+
+    <!-- Type -->
+    <span class="text-xs text-gray-500 shrink-0 w-16 text-right">
+      {{ getTypeLabel(entry) }}
+    </span>
+
     <!-- Size -->
-    <span v-if="!entry.isDir" class="text-xs text-gray-500 shrink-0 ml-2">
-      {{ formatBytes(entry.size) }}
+    <span class="text-xs text-gray-500 shrink-0 w-20 text-right">
+      {{ entry.isDir ? '—' : formatBytes(entry.size) }}
     </span>
   </div>
 
